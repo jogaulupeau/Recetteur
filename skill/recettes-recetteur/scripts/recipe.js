@@ -184,6 +184,21 @@ export function validateRecipe(input) {
         if (Number.isFinite(d) && d > 0 && d <= 20000) step.duree = Math.round(d);
         else warn(`${p}.duree`, 'minutes (nombre > 0) attendues, ignorée');
       }
+      // Plusieurs minuteurs sur une même étape (« 3 min de chaque côté ») ; `duree` reste le raccourci pour un seul.
+      if (o.minuteurs != null) {
+        if (!Array.isArray(o.minuteurs)) warn(`${p}.minuteurs`, 'liste attendue, ignorée');
+        else {
+          const list = [];
+          o.minuteurs.slice(0, 6).forEach((m, j) => {
+            const mins = parseNumber(isObj(m) ? (m.minutes ?? m.duree) : m);
+            if (!(mins > 0 && mins <= 20000)) return warn(`${p}.minuteurs[${j}]`, 'durée en minutes (> 0) attendue, ignoré');
+            const lib = isObj(m) ? str(m.libelle) : '';
+            list.push(lib ? { minutes: Math.round(mins * 100) / 100, libelle: lib.slice(0, 80) } : { minutes: Math.round(mins * 100) / 100 });
+          });
+          if (o.minuteurs.length > 6) warn(`${p}.minuteurs`, '6 minuteurs au maximum par étape, les suivants sont ignorés');
+          if (list.length) step.minuteurs = list;
+        }
+      }
       const refs = [];
       for (const ref of Array.isArray(o.ingredients) ? o.ingredients : []) {
         const key = str(ref).toLowerCase();

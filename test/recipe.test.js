@@ -78,3 +78,23 @@ test('parseNumber', () => {
   assert.equal(parseNumber('2,5'), 2.5);
   assert.ok(Number.isNaN(parseNumber('abc')));
 });
+
+import { stepTimers } from '../shared/steps.js';
+
+test('minuteurs d’étape : liste, raccourci duree, valeurs invalides ignorées', () => {
+  const r = base();
+  r.etapes = [
+    { texte: 'A', duree: 5 },
+    { texte: 'B', minuteurs: [{ minutes: 3, libelle: 'Côté 1' }, { minutes: '3' }, { minutes: 0 }, { minutes: 'x' }, 4] },
+    { texte: 'C' },
+    { texte: 'D', minuteurs: 'beaucoup' },
+  ];
+  const { recipe, warnings, errors } = validateRecipe(r);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(stepTimers(recipe.etapes[0]), [{ minutes: 5, libelle: '' }]);
+  assert.deepEqual(recipe.etapes[1].minuteurs, [{ minutes: 3, libelle: 'Côté 1' }, { minutes: 3 }, { minutes: 4 }]);
+  assert.deepEqual(stepTimers(recipe.etapes[1]), [{ minutes: 3, libelle: 'Côté 1' }, { minutes: 3, libelle: '' }, { minutes: 4, libelle: '' }]);
+  assert.deepEqual(stepTimers(recipe.etapes[2]), []);
+  assert.equal(recipe.etapes[3].minuteurs, undefined);
+  assert.equal(warnings.filter((w) => w.includes('minuteurs')).length, 3);
+});

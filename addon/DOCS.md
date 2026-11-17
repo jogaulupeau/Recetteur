@@ -25,6 +25,9 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 | --- | --- |
 | `portions_defaut` | Nombre de personnes de votre foyer : valeur proposée pour les recettes « pour N personnes » et pour chaque repas du menu. |
 | `ha_todo_entity` | Liste « todo » de Home Assistant qui reçoit les courses (`todo.shopping_list` par défaut). |
+| `alerte_media_player` | Lecteur multimédia qui sonne à la fin d'un minuteur (`media_player.cuisine`, une enceinte Sonos, Google Nest…). Vide = pas d'alerte sur enceinte. |
+| `alerte_voix` | Entité de synthèse vocale (`tts.home_assistant_cloud`, `tts.piper`…) : le lecteur annonce « Minuteur terminé : cuisson des pâtes ». |
+| `alerte_son` | À la place de la voix : un son à jouer (`media-source://media_source/local/ding.mp3` ou une URL). Si `alerte_voix` est aussi renseignée, la voix est prioritaire. |
 | `log_level` | Niveau de détail des journaux. |
 
 ## Ajouter des recettes (avec Claude)
@@ -60,16 +63,40 @@ peut être ignorée, remplacée ou copiée.
   multiples (sonnerie + vibration), écran maintenu allumé, flèches du clavier ou
   glissement du doigt pour avancer.
 
+## Minuteurs et alerte sur une enceinte
+
+Les étapes qui comportent une attente (cuisson, repos, mijotage) proposent un bouton **Lancer le
+minuteur**, sur la fiche recette comme en mode cuisine. Une étape peut en avoir plusieurs (« 3 min de
+chaque côté », « arroser toutes les 20 min »).
+
+- Les minuteurs vivent **dans l'app, pas dans le navigateur** : ils restent affichés (en haut à
+  droite) sur toutes les pages, survivent à un rechargement, à un écran éteint et même au redémarrage
+  de l'app, et sont visibles depuis tous vos appareils. Pause, « +1 » minute et annulation à tout moment.
+- Le navigateur sonne et vibre s'il est ouvert. Si un lecteur est configuré, l'app envoie en plus,
+  **à l'échéance, depuis le serveur**, l'alerte à Home Assistant : vous l'entendez dans la cuisine
+  même téléphone en poche.
+- La case **Alerte sur <lecteur>** (mode cuisine, ou fiche recette) active ou non l'annonce pour les
+  prochains minuteurs de cet appareil ; **Tester** envoie un message immédiat pour vérifier le réglage.
+- Les noms d'entités se trouvent dans *Outils de développement → États* (filtres `media_player.` et `tts.`).
+- Après un redémarrage, un minuteur échu depuis moins de 5 minutes est encore annoncé ; au-delà il est
+  simplement marqué terminé.
+
+Exemple pour une enceinte Sonos avec Piper : `alerte_media_player: media_player.cuisine`,
+`alerte_voix: tts.piper`.
+
 ## Vos données
 
 Tout ce que l'app écrit va dans son volume `/data` : `recettes.json`, `menu.json`,
-`etat.json` (et une copie `.bak` de la version précédente de chacun). Ce volume
+`etat.json` (courses cochées, minuteurs en cours) (et une copie `.bak` de la version précédente de chacun). Ce volume
 **survit aux redémarrages et aux mises à jour** et est inclus dans les
 sauvegardes Home Assistant. Un fichier illisible n'est jamais écrasé : il est
 mis de côté sous `*.corrompu`.
 
 ## Dépannage
 
+- **L'alerte ne sonne pas** : utilisez le bouton **Tester** (il affiche l'erreur de Home Assistant). Vérifiez
+  que `alerte_media_player` et `alerte_voix` (ou `alerte_son`) sont de vraies entités, que l'enceinte est allumée,
+  et que la case « Alerte » est activée pour cet appareil.
 - **« Vers Home Assistant » n'apparaît pas** : le bouton n'existe que dans l'app
   installée. Vérifiez aussi que `ha_todo_entity` correspond à une entité existante
   (*Paramètres → Appareils et services → Entités*, domaine `todo.`).

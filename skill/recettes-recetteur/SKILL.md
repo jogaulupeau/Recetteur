@@ -98,8 +98,14 @@ Une recette seule (objet sans enveloppe) ou un tableau sont aussi acceptés, mai
     `{{id}}`, remplacé à l'affichage par la quantité ajustée avec son unité : « Ajoutez {{boeuf}} de viande
     hachée » devient « Ajoutez 600 g de viande hachée ». Pour un ingrédient sans unité : « Battez {{oeufs}} œufs ».
   - Les durées et températures restent en clair (« 45 minutes », « 180 °C »).
-  - `duree` (minutes, entier) sur une étape déclenche un minuteur en mode cuisine ; mets-la seulement quand
-    il y a une vraie attente à chronométrer (cuisson, repos, mijotage).
+  - `duree` (minutes) sur une étape propose un minuteur (en mode cuisine et sur la fiche) ; mets-la seulement
+    quand il y a une vraie attente à chronométrer (cuisson, repos, mijotage).
+  - Pour **plusieurs attentes dans la même étape**, ajoute `minuteurs` : une liste de
+    `{ "minutes": 3, "libelle": "Côté 1" }` (libellé court à l'impératif : « Retourner », « Arroser », « Sortir »).
+    Exemples : « 3 minutes de chaque côté » → deux minuteurs `Côté 1` et `Côté 2` ; « enfournez 1 h 15 en arrosant
+    toutes les 20 minutes » → `Arroser` (20) et `Fin de cuisson` (75). `minuteurs` remplace `duree` pour les minuteurs ;
+    garde `duree` pour la durée totale de l'étape. Les minutes peuvent être décimales (`0.5` = 30 s). 6 au maximum.
+    Ces minuteurs peuvent sonner sur une enceinte connectée : ne les multiplie pas pour des durées sans attente.
   - `ingredients` : les `id` utilisés à cette étape (affichés en rappel). **Chaque ingrédient doit apparaître dans
     au moins une étape.**
 - **`type`** : `entree`, `plat`, `accompagnement`, `dessert`, `petit-dejeuner`, `gouter`, `apero`, `boisson`,
@@ -130,6 +136,7 @@ mesures anglo-saxonnes (cups, oz, °F) en mesures métriques arrondies propremen
 - [ ] quantités numériques ; unités de la liste ; pas d'unité pour les pièces entières
 - [ ] chaque `{{id}}` et chaque `ingredients: [...]` d'étape correspond à un `id` existant
 - [ ] chaque ingrédient est utilisé dans au moins une étape
+- [ ] minuteurs : `duree` / `minuteurs` seulement pour de vraies attentes, avec un libellé court
 - [ ] aucune quantité « en dur » dans le texte quand elle dépend du nombre de convives
 - [ ] `rayon` renseigné ; `basique` sur sel/poivre/huile…; `fixe` quand ça ne s'ajuste pas
 - [ ] tout est dans un seul bloc ```json

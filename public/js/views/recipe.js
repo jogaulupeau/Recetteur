@@ -5,7 +5,8 @@ import { favButton, defaultServings } from '../cards.js';
 import { addToMenuDialog } from '../picker.js';
 import { fmtTime, typeLabel, ago } from '../format.js';
 import { formatIngredient } from '../../shared/quantity.js';
-import { stepSegments } from '../../shared/steps.js';
+import { stepSegments, stepTimers } from '../../shared/steps.js';
+import { stepTimerButtons, alertControl } from '../timers.js';
 import { totalTime } from '../../shared/recipe.js';
 import { today } from '../../shared/dates.js';
 
@@ -44,12 +45,12 @@ export function render({ params: [id], query, root }) {
       current.append(h('li', { class: ing.optionnel ? 'optional' : '' }, formatIngredient(ing, r.portions, portions)));
     }
     clear(stepsBox);
-    for (const s of r.etapes) {
+    r.etapes.forEach((s, i) => {
       stepsBox.append(h('li', {},
         s.titre ? h('h4', {}, s.titre) : null,
         h('div', {}, stepSegments(s.texte, r, portions).map((seg) => (seg.qte ? h('span', { class: 'q' }, seg.qte) : seg.texte))),
-        s.duree ? h('span', { class: 'dur' }, icon('timer', 14), fmtTime(s.duree)) : null));
-    }
+        stepTimers(s).length ? stepTimerButtons(e, i + 1, s, { size: 'sm' }) : null));
+    });
   }
   draw();
 
@@ -97,7 +98,7 @@ export function render({ params: [id], query, root }) {
         ingBox,
         r.materiel?.length ? h('div', {}, h('div', { class: 'ing-group' }, 'Matériel'), h('p', { class: 'small' }, r.materiel.join(' · '))) : null),
       h('div', { class: 'stack' },
-        h('section', { class: 'card' }, h('h2', {}, 'Préparation'), stepsBox),
+        h('section', { class: 'card' }, h('div', { class: 'row between' }, h('h2', { style: { margin: 0 } }, 'Préparation'), r.etapes.some((x) => stepTimers(x).length) ? alertControl() : null), stepsBox),
         r.notes || r.conservation || r.source ? h('section', { class: 'card stack tight' },
           r.notes ? h('div', {}, h('h3', {}, 'Notes'), h('p', { style: { whiteSpace: 'pre-line', margin: 0 } }, r.notes)) : null,
           r.conservation ? h('div', {}, h('h3', {}, 'Conservation'), h('p', { style: { margin: 0 } }, r.conservation)) : null,

@@ -55,8 +55,11 @@ plusieurs recettes et convertit `g`↔`kg`, `ml`/`cl`/`dl`↔`l`.
 |---|---|---|
 | `texte` | texte (**obligatoire**) | Instruction complète. `{{id}}` y est remplacé par la quantité ajustée de l'ingrédient (avec son unité). |
 | `titre` | texte | Intitulé court (`Le fond de sauce`). |
-| `duree` | entier (minutes) | Attente chronométrable : un minuteur est proposé en mode cuisine. |
+| `duree` | nombre (minutes) | Attente chronométrable : un minuteur est proposé (mode cuisine et fiche recette). |
+| `minuteurs` | liste de `{ minutes, libelle? }` | Plusieurs minuteurs sur la même étape (6 max). `minutes` > 0, décimales permises (`0.5` = 30 s) ; `libelle` court à l'impératif (`Retourner`, `Arroser`). Remplace `duree` pour le(s) minuteur(s) proposé(s). Chaque minuteur peut faire sonner une enceinte connectée. |
 | `ingredients` | liste d'`id` | Ingrédients de l'étape, rappelés en haut de l'étape avec leurs quantités ajustées. |
+
+Exemple : `{ "texte": "Enfournez 1 h 15 en arrosant toutes les 20 minutes.", "duree": 75, "minuteurs": [{ "minutes": 20, "libelle": "Arroser" }, { "minutes": 75, "libelle": "Fin de cuisson" }] }`.
 
 Une étape peut aussi être donnée comme simple texte (`"etapes": ["Mélanger.", "Cuire."]`), mais sans minuteur ni
 rappel d'ingrédients : à éviter.

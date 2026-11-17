@@ -22,7 +22,9 @@ npm test
 
 Variables : `PORT` (8099), `HOST` (127.0.0.1 ; l'app Home Assistant utilise 0.0.0.0, sans publier le port),
 `RECETTEUR_DATA_DIR` (`./data`), `RECETTEUR_OPTIONS` (`/data/options.json`, options de l'app :
-`portions_defaut`, `ha_todo_entity`, `log_level`), `SUPERVISOR_TOKEN` (active l'envoi des courses vers Home Assistant).
+`portions_defaut`, `ha_todo_entity`, `alerte_media_player`, `alerte_voix`, `alerte_son`, `log_level`), `SUPERVISOR_TOKEN`
+(active les appels à Home Assistant : courses → liste todo, alerte des minuteurs → enceinte), `HA_API_BASE` (simuler
+Home Assistant en développement).
 
 ## Le skill Claude
 

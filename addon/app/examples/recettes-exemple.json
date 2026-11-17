@@ -61,7 +61,7 @@
         { "titre": "Préparer", "texte": "Préchauffez le four à 200 °C. Sortez le poulet du réfrigérateur 30 minutes avant. Glissez dans la cavité le citron coupé en deux, {{thym}} de thym et 2 gousses d’ail.", "ingredients": ["poulet", "citron", "thym", "ail"] },
         { "texte": "Badigeonnez le poulet avec {{beurre}} de beurre mou. Salez et poivrez généreusement.", "ingredients": ["beurre", "sel", "poivre"] },
         { "texte": "Épluchez les pommes de terre ({{patates}}), coupez-les en quartiers et mélangez-les avec {{huile}} d’huile d’olive et le reste de l’ail dans un grand plat. Posez le poulet dessus.", "ingredients": ["patates", "huile", "ail"] },
-        { "titre": "Cuisson", "texte": "Enfournez 1 h 15, en arrosant avec le jus de cuisson toutes les 20 minutes. Laissez reposer 10 minutes sous du papier d’aluminium avant de découper.", "duree": 75 }
+        { "titre": "Cuisson", "texte": "Enfournez 1 h 15, en arrosant avec le jus de cuisson toutes les 20 minutes. Laissez reposer 10 minutes sous du papier d’aluminium avant de découper.", "duree": 75, "minuteurs": [{ "minutes": 20, "libelle": "Arroser le poulet" }, { "minutes": 75, "libelle": "Fin de cuisson" }] }
       ],
       "notes": "Le temps de cuisson dépend du poids : comptez environ 45 minutes par kilo, plus 15 minutes."
     },

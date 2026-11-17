@@ -21,7 +21,9 @@ const log = {
   error: (...a) => console.error(stamp(), 'ERREUR', ...a),
 };
 
-const { server, stores } = createApp({ dataDir, options, log, supervisorToken: process.env.SUPERVISOR_TOKEN || null });
+const { server, stores } = createApp({ dataDir, options, log, supervisorToken: process.env.SUPERVISOR_TOKEN || null,
+  // Pour simuler Home Assistant en développement (par défaut : l'API du Supervisor).
+  haBase: process.env.HA_API_BASE || undefined });
 server.listen(port, host, () => {
   log.info(`Recetteur : http://${host}:${port}/ — ${Object.keys(stores.recettes.data.recettes).length} recette(s), données dans ${dataDir}`);
 });

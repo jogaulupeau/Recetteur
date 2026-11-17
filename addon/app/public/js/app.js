@@ -1,5 +1,6 @@
 import { h, clear, icon, toast, fill } from './dom.js';
 import { init } from './state.js';
+import { initTimers } from './timers.js';
 
 import * as home from './views/home.js';
 import * as recipes from './views/recipes.js';
@@ -85,6 +86,7 @@ window.addEventListener('hashchange', render);
     fill(main, h('div', { class: 'card empty' }, h('h2', {}, 'Impossible de démarrer'), h('p', { class: 'muted' }, e.message)));
     return;
   }
+  initTimers();
   render();
 })();
 

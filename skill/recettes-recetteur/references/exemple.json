@@ -276,7 +276,17 @@
         {
           "titre": "Cuisson",
           "texte": "Enfournez 1 h 15, en arrosant avec le jus de cuisson toutes les 20 minutes. Laissez reposer 10 minutes sous du papier d’aluminium avant de découper.",
-          "duree": 75
+          "duree": 75,
+          "minuteurs": [
+            {
+              "minutes": 20,
+              "libelle": "Arroser le poulet"
+            },
+            {
+              "minutes": 75,
+              "libelle": "Fin de cuisson"
+            }
+          ]
         }
       ],
       "notes": "Le temps de cuisson dépend du poids : comptez environ 45 minutes par kilo, plus 15 minutes."

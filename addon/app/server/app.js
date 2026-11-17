@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JsonStore } from './store.js';
+import { createHa, HaError } from './ha.js';
+import { createTimers } from './minuteurs.js';
 import { validateRecipe, validateBundle } from '../shared/recipe.js';
 import { slugify } from '../shared/text.js';
 import { FORMAT } from '../shared/vocab.js';
@@ -44,8 +46,17 @@ const MIME = {
 export function createApp({ dataDir, options = {}, log = console, supervisorToken = null, haBase = 'http://supervisor/core/api', fetch: doFetch = globalThis.fetch } = {}) {
   const recettes = new JsonStore(path.join(dataDir, 'recettes.json'), { version: 1, recettes: {} }, log);
   const menu = new JsonStore(path.join(dataDir, 'menu.json'), { version: 1, suivant: 1, repas: [] }, log);
-  const etat = new JsonStore(path.join(dataDir, 'etat.json'), { version: 1, courses: {}, stock: [] }, log);
-  const cfg = { portions_defaut: Number(options.portions_defaut) || 4, ha_todo_entity: options.ha_todo_entity || 'todo.shopping_list' };
+  const etat = new JsonStore(path.join(dataDir, 'etat.json'), { version: 1, courses: {}, stock: [], minuteurs: [] }, log);
+  const cfg = {
+    portions_defaut: Number(options.portions_defaut) || 4,
+    ha_todo_entity: options.ha_todo_entity || 'todo.shopping_list',
+    alerte_media_player: String(options.alerte_media_player ?? '').trim(),
+    alerte_voix: String(options.alerte_voix ?? '').trim(),
+    alerte_son: String(options.alerte_son ?? '').trim(),
+  };
+  const ha = createHa({ token: supervisorToken, base: haBase, fetch: doFetch, cfg });
+  const timers = createTimers({ store: etat, titreRecette: (id) => recettes.data.recettes[id]?.recette.titre, ha, log });
+  timers.restore();
 
   const now = () => new Date().toISOString();
   const entry = (id) => {
@@ -86,7 +97,14 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     routes.push({ method, re, keys, handler });
   };
 
-  route('GET', '/api/config', () => ({ ...cfg, format: FORMAT, ha: !!supervisorToken }));
+  route('GET', '/api/config', () => ({
+    portions_defaut: cfg.portions_defaut,
+    ha_todo_entity: cfg.ha_todo_entity,
+    format: FORMAT,
+    ha: !!supervisorToken,
+    // Alerte sur un lecteur multimédia : `mode` vaut « voix », « son » ou null (non configurée).
+    alerte: { mode: ha.alertMode(), lecteur: cfg.alerte_media_player || null },
+  }));
 
   // --- Recettes
   route('GET', '/api/recettes', () => list());
@@ -287,19 +305,31 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     const echecs = [];
     for (const item of items) {
       try {
-        const res = await doFetch(`${haBase}/services/todo/add_item`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${supervisorToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ entity_id: cfg.ha_todo_entity, item }),
-        });
-        if (res.ok) ok++;
-        else echecs.push(`${item} (HTTP ${res.status})`);
+        await ha.call('todo/add_item', { entity_id: cfg.ha_todo_entity, item });
+        ok++;
       } catch (e) {
         echecs.push(`${item} (${e.message})`);
       }
     }
     if (ok === 0) throw new HttpError(502, `Home Assistant n’a rien accepté (${echecs[0]}). Vérifiez que « ${cfg.ha_todo_entity} » existe.`);
     return { envoyes: ok, echecs, liste: cfg.ha_todo_entity };
+  });
+
+  // --- Minuteurs (côté serveur) et alerte sur un lecteur multimédia Home Assistant
+  const known = (t) => t ?? (() => { throw notFound('Minuteur introuvable.'); })();
+  route('GET', '/api/minuteurs', () => timers.list());
+  route('POST', '/api/minuteurs', ({ body }) => created(timers.create(body ?? {})));
+  route('POST', '/api/minuteurs/:id/pause', ({ params }) => known(timers.pause(params.id)));
+  route('POST', '/api/minuteurs/:id/reprendre', ({ params }) => known(timers.resume(params.id)));
+  route('POST', '/api/minuteurs/:id/ajouter', ({ params, body }) => known(timers.add(params.id, body)));
+  route('DELETE', '/api/minuteurs/:id', ({ params }) => (known(timers.remove(params.id) || null), { ok: true }));
+  route('POST', '/api/alerte/test', async () => {
+    try {
+      return { mode: await ha.announce('Test de l’alerte Recetteur : le minuteur sonnera ici.'), lecteur: cfg.alerte_media_player };
+    } catch (e) {
+      if (e instanceof HaError) throw new HttpError(e.status, e.message);
+      throw e;
+    }
   });
 
   // ------------------------------------------------------------------ HTTP
@@ -373,5 +403,6 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     }
   });
 
-  return { server, stores: { recettes, menu, etat }, config: cfg };
+  server.on('close', () => timers.close());
+  return { server, stores: { recettes, menu, etat }, config: cfg, timers };
 }
