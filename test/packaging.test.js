@@ -50,6 +50,16 @@ test('l’exemple du skill et les exemples de l’appli sont valides, sans avert
   }
 });
 
+test('skill : en-tête conforme aux limites de claude.ai (name ≤ 64, description ≤ 200, dossier = nom)', () => {
+  const md = fs.readFileSync(path.join(ROOT, 'skill', 'recettes-recetteur', 'SKILL.md'), 'utf8');
+  const name = md.match(/^name: (.+)$/m)[1];
+  const description = md.match(/^description: (.+)$/m)[1];
+  assert.equal(name, 'recettes-recetteur');
+  assert.ok(name.length <= 64);
+  assert.ok(description.length <= 200, `description : ${description.length} caractères (max 200)`);
+  assert.match(md, /^---\nname: .+\ndescription: .+\n---\n/);
+});
+
 test('config de l’app Home Assistant cohérente', () => {
   const cfg = fs.readFileSync(path.join(ROOT, 'addon', 'config.yaml'), 'utf8');
   assert.match(cfg, /ingress: true/);

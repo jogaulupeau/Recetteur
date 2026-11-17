@@ -1,6 +1,6 @@
 ---
 name: recettes-recetteur
-description: Écrit, convertit ou met en forme des recettes de cuisine au format JSON « recetteur/v1 » pour les importer dans l'application Recetteur (menu de la semaine, liste de courses, recette pas à pas avec quantités ajustables). À utiliser dès que l'utilisateur demande une recette, plusieurs recettes, des idées de repas à garder, ou veut convertir/ranger une recette (texte, lien, photo, copier-coller) pour Recetteur.
+description: Écrit ou convertit des recettes au format JSON « recetteur/v1 » pour l'appli Recetteur (menu, courses, pas à pas). À utiliser dès qu'on demande une recette ou qu'on veut en ranger une pour Recetteur.
 ---
 
 # Recettes pour Recetteur
