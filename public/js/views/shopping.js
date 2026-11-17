@@ -131,7 +131,7 @@ export async function render({ params: [week], root }) {
 
       h('div', { class: 'row', style: { marginBottom: '1rem', flexWrap: 'nowrap' } }, h('div', { class: 'grow' }, input), h('button', { class: 'btn', onclick: addManual }, icon('plus', 18), 'Ajouter')),
 
-      ...groups.map((g) => h('section', { class: 'aisle' }, h('h3', {}, g.label), h('ul', { class: 'items' }, g.items.map(itemRow)))),
+      ...groups.map((g) => h('section', { class: 'aisle', 'data-rayon': g.rayon }, h('h3', {}, g.label), h('ul', { class: 'items' }, g.items.map(itemRow)))),
 
       manuels.length ? h('section', { class: 'aisle' }, h('h3', {}, 'Ajoutés à la main'), h('ul', { class: 'items' }, manuels.map((m) =>
         h('li', { class: `item ${m.coche ? 'checked' : ''}` },

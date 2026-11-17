@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { recipeCard, loadExamples } from '../cards.js';
 import { searchRecipes, tagCounts } from '../../shared/search.js';
 import { TYPES } from '../../shared/vocab.js';
+import { emptyPlate } from '../art.js';
 
 // Les filtres survivent à la navigation (aller voir une fiche, revenir).
 const filters = { q: '', type: '', tags: [], favoris: false, maxTemps: 0, tri: '' };
@@ -16,10 +17,12 @@ export function render({ root }) {
   root.append(head);
 
   if (!state.recettes.length) {
-    root.append(empty('Votre livre de recettes est vide',
+    const blank = (empty('Votre livre de recettes est vide',
       'Importez des recettes générées avec Claude, ou commencez avec quelques exemples.',
       h('a', { class: 'btn primary', href: '#/importer' }, icon('upload', 18), 'Importer des recettes'),
       h('button', { class: 'btn', onclick: async (ev) => { ev.target.disabled = true; await loadExamples(); location.reload(); } }, 'Charger 5 exemples')));
+    blank.prepend(emptyPlate());
+    root.append(blank);
     return;
   }
 

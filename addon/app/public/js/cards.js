@@ -2,6 +2,7 @@ import { h, icon, toast } from './dom.js';
 import { api } from './api.js';
 import { patchEntry, state } from './state.js';
 import { fmtTime, ago, typeLabel } from './format.js';
+import { plate, tintOf } from './art.js';
 import { totalTime } from '../shared/recipe.js';
 
 /** Servings par défaut : la taille du foyer pour des plats « pour N personnes », sinon la quantité de la recette. */
@@ -38,17 +39,17 @@ export function metaLine(e) {
 
 export function recipeCard(e, { reasons = [], manquants = [] } = {}) {
   const r = e.recette;
-  return h('a', { class: 'rcard', href: `#/recette/${encodeURIComponent(e.id)}` },
-    r.image ? h('img', { class: 'cover', src: r.image, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null,
+  return h('a', { class: 'rcard', href: `#/recette/${encodeURIComponent(e.id)}`, 'data-type': r.type, 'data-tint': tintOf(r) },
+    r.image ? h('img', { class: 'cover', src: r.image, alt: '', loading: 'lazy', onerror: (ev) => ev.target.replaceWith(plate(r)) }) : plate(r),
     favButton(e),
-    h('div', {}, h('span', { class: 'badge' }, typeLabel(r.type))),
-    h('h3', {}, r.titre),
-    metaLine(e),
-    r.tags.length ? h('div', { class: 'chips' }, r.tags.slice(0, 4).map((t) => h('span', { class: 'tag' }, t))) : null,
-    e.derniere_cuisson ? h('div', { class: 'small muted' }, `Cuisinée ${ago(e.derniere_cuisson)}`) : null,
-    reasons.length ? h('div', { class: 'reasons' }, reasons.join(' · ')) : null,
-    manquants.length ? h('div', { class: 'small muted' }, `Manque : ${manquants.slice(0, 4).join(', ')}${manquants.length > 4 ? '…' : ''}`) : null,
-  );
+    h('div', { class: 'rcard-body' },
+      h('span', { class: 'badge' }, typeLabel(r.type)),
+      h('h3', {}, r.titre),
+      metaLine(e),
+      r.tags.length ? h('div', { class: 'chips' }, r.tags.slice(0, 4).map((t) => h('span', { class: 'tag' }, t))) : null,
+      e.derniere_cuisson ? h('div', { class: 'small muted' }, `Cuisinée ${ago(e.derniere_cuisson)}`) : null,
+      reasons.length ? h('div', { class: 'reasons' }, reasons.join(' · ')) : null,
+      manquants.length ? h('div', { class: 'small muted' }, `Manque : ${manquants.slice(0, 4).join(', ')}${manquants.length > 4 ? '…' : ''}`) : null));
 }
 
 export async function loadExamples() {

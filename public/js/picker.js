@@ -9,6 +9,7 @@ import { today, dayName, dayMonth, addDays } from '../shared/dates.js';
 import { totalTime } from '../shared/recipe.js';
 import { fmtTime, SLOT_LABELS } from './format.js';
 import { defaultServings } from './cards.js';
+import { plate, tintOf } from './art.js';
 
 /**
  * Ouvre un sélecteur ; résout avec l'entrée choisie (ou undefined).
@@ -23,8 +24,8 @@ export function pickRecipe({ titre = 'Choisir une recette', type = 'plat', exclu
   const list = h('div', { class: 'picker-list' });
 
   const row = (e, sub) =>
-    h('button', { class: 'pick', type: 'button', onclick: () => m.close(e) },
-      h('span', {}, h('strong', {}, e.recette.titre), h('span', { class: 'small muted' }, sub ?? '')),
+    h('button', { class: 'pick', type: 'button', 'data-type': e.recette.type, 'data-tint': tintOf(e.recette), onclick: () => m.close(e) },
+      h('span', { class: 'lead' }, plate(e.recette, { className: 'avatar' }), h('span', {}, h('strong', {}, e.recette.titre), h('span', { class: 'small muted' }, sub ?? ''))),
       h('span', { class: 'small muted' }, totalTime(e.recette) ? fmtTime(totalTime(e.recette)) : ''));
 
   const draw = () => {

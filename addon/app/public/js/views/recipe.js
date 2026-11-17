@@ -4,6 +4,7 @@ import { entry, dropEntry, patchEntry } from '../state.js';
 import { favButton, defaultServings } from '../cards.js';
 import { addToMenuDialog } from '../picker.js';
 import { fmtTime, typeLabel, ago } from '../format.js';
+import { plate } from '../art.js';
 import { formatIngredient } from '../../shared/quantity.js';
 import { stepSegments, stepTimers } from '../../shared/steps.js';
 import { stepTimerButtons, alertControl } from '../timers.js';
@@ -83,23 +84,25 @@ export function render({ params: [id], query, root }) {
 
   root.append(
     h('a', { class: 'btn ghost sm', href: '#/recettes' }, icon('left', 16), 'Recettes'),
-    h('div', { class: 'recipe-head' },
-      h('div', { class: 'row between' }, h('div', { class: 'row' }, h('span', { class: 'badge' }, typeLabel(r.type)), r.tags.map((t) => h('span', { class: 'tag' }, t))), favButton(e)),
-      h('h1', {}, r.titre),
-      r.description ? h('p', { class: 'muted' }, r.description) : null,
-      metaBits,
-      h('div', { class: 'row' }, cookBtn,
-        h('button', { class: 'btn', onclick: () => addToMenuDialog(e) }, icon('calendar', 18), 'Ajouter au menu'),
-        h('button', { class: 'btn', onclick: markCooked, title: 'Noter comme cuisinée aujourd’hui' }, icon('check', 18), 'Cuisinée'))),
+    h('div', { class: 'hero', 'data-type': r.type },
+      r.image ? h('img', { class: 'plate', src: r.image, alt: '', style: { objectFit: 'cover' }, onerror: (ev) => ev.target.replaceWith(plate(r, { fit: 'slice' })) }) : plate(r, { fit: 'slice' }),
+      h('div', { class: 'hero-text' },
+        h('div', { class: 'row between' }, h('div', { class: 'row' }, h('span', { class: 'badge' }, typeLabel(r.type)), r.tags.map((t) => h('span', { class: 'tag' }, t))), favButton(e)),
+        h('h1', {}, r.titre),
+        r.description ? h('p', { class: 'muted', style: { margin: 0, fontSize: '1.05rem' } }, r.description) : null,
+        metaBits,
+        h('div', { class: 'row' }, cookBtn,
+          h('button', { class: 'btn', onclick: () => addToMenuDialog(e) }, icon('calendar', 18), 'Ajouter au menu'),
+          h('button', { class: 'btn', onclick: markCooked, title: 'Noter comme cuisinée aujourd’hui' }, icon('check', 18), 'Cuisinée')))),
     h('div', { class: 'recipe-cols' },
-      h('section', { class: 'card sticky' },
+      h('section', { class: 'card fiche sticky', 'data-type': r.type },
         h('div', { class: 'row between' }, h('h2', { style: { margin: 0 } }, 'Ingrédients'), stepper(portions, setPortions, { unit: r.portions_unite })),
         r.portions_unite === 'personnes' && portions !== r.portions ? h('p', { class: 'small muted' }, `Recette d’origine : ${r.portions} personnes.`) : null,
         ingBox,
         r.materiel?.length ? h('div', {}, h('div', { class: 'ing-group' }, 'Matériel'), h('p', { class: 'small' }, r.materiel.join(' · '))) : null),
       h('div', { class: 'stack' },
         h('section', { class: 'card' }, h('div', { class: 'row between' }, h('h2', { style: { margin: 0 } }, 'Préparation'), r.etapes.some((x) => stepTimers(x).length) ? alertControl() : null), stepsBox),
-        r.notes || r.conservation || r.source ? h('section', { class: 'card stack tight' },
+        r.notes || r.conservation || r.source ? h('section', { class: 'card stack' },
           r.notes ? h('div', {}, h('h3', {}, 'Notes'), h('p', { style: { whiteSpace: 'pre-line', margin: 0 } }, r.notes)) : null,
           r.conservation ? h('div', {}, h('h3', {}, 'Conservation'), h('p', { style: { margin: 0 } }, r.conservation)) : null,
           r.source ? h('p', { class: 'small muted', style: { margin: 0 } }, 'Source : ', /^https?:\/\//.test(r.source) ? h('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer' }, r.source) : r.source) : null) : null,

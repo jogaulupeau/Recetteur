@@ -2,6 +2,7 @@ import { h, icon, modal, stepper, toast, confirmDialog, empty, fill } from '../d
 import { api } from '../api.js';
 import { state, entry } from '../state.js';
 import { pickRecipe } from '../picker.js';
+import { tintOf } from '../art.js';
 import { defaultServings } from '../cards.js';
 import { fmtTime, SLOT_LABELS } from '../format.js';
 import { today, addDays, weekStart, weekDays, weekLabel, dayName, dayShort } from '../../shared/dates.js';
@@ -62,7 +63,7 @@ export async function render({ params: [week], root }) {
   function mealEl(m) {
     const e = entry(m.recipeId);
     if (!e) return null;
-    return h('div', { class: `meal ${m.fait ? 'done' : ''}` },
+    return h('div', { class: `meal ${m.fait ? 'done' : ''}`, 'data-type': e.recette.type, 'data-tint': tintOf(e.recette) },
       h('input', { type: 'checkbox', checked: m.fait, title: 'Marquer comme cuisiné', 'aria-label': `Cuisiné : ${e.recette.titre}`, onchange: (ev) => patch(m, { fait: ev.target.checked }) }),
       h('div', {},
         h('a', { class: 'meal-title', href: `#/recette/${encodeURIComponent(e.id)}?p=${m.servings}` }, e.recette.titre),
@@ -84,7 +85,7 @@ export async function render({ params: [week], root }) {
         h('section', { class: `day ${date === today() ? 'today' : ''}` },
           h('h3', {}, dayName(date), h('small', {}, dayShort(date))),
           SLOTS.map((slot) => h('div', { class: 'slot' },
-            h('div', { class: 'slot-label' }, SLOT_LABELS[slot]),
+            h('div', { class: 'slot-label' }, icon(slot === 'midi' ? 'sun' : 'moon', 14), SLOT_LABELS[slot]),
             mealsIn(date, slot).map(mealEl),
             h('button', { class: 'addmeal', onclick: () => add(date, slot), 'aria-label': `Ajouter un plat : ${SLOT_LABELS[slot]} ${dayName(date)}` }, icon('plus', 16), mealsIn(date, slot).length ? 'Ajouter' : 'Choisir une recette')))))));
   }

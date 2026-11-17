@@ -4,9 +4,25 @@ Vos recettes, le menu de la semaine, la liste de courses et la recette **pas à 
 s'ajustent au nombre de personnes. Conçu comme une **app Home Assistant** (comme [Trouveur](https://github.com/jogaulupeau/trouveur)),
 mais utilisable seul.
 
+![Accueil](docs/screenshots/accueil.png)
+
+| | |
+|---|---|
+| ![Recettes](docs/screenshots/recettes.png) | ![Fiche recette](docs/screenshots/recette.png) |
+| ![Menu de la semaine](docs/screenshots/menu.png) | ![Liste de courses](docs/screenshots/courses.png) |
+| ![Mode cuisine](docs/screenshots/cuisine.png) | ![Mobile](docs/screenshots/mobile.png) |
+
 - **Zéro dépendance** : Node.js ≥ 20 et sa bibliothèque standard. Interface en JavaScript pur, sans étape de build.
 - **Recettes générées avec Claude** : un [skill](skill/recettes-recetteur/SKILL.md) impose le format d'import.
 - Données en simples fichiers JSON.
+
+## Design
+
+« Carnet d'épicerie fine » : papier et encre verte, tomate et beurre. Titres en [Fraunces](https://github.com/undercasetype/Fraunces)
+et texte en [Figtree](https://github.com/erikdkennedy/figtree), **embarquées** (`public/fonts/`, licence SIL OFL) : l'app est identique
+hors ligne, derrière l'ingress. Chaque recette reçoit une **assiette illustrée générée** d'après son titre et ses ingrédients
+(`public/js/art.js`), sans photo à stocker ; le menu du jour est une ardoise ; le mode cuisine est sombre et très lisible à bout de bras.
+Thèmes clair et sombre automatiques (selon l'appareil).
 
 ## Installation dans Home Assistant
 
