@@ -1,0 +1,39 @@
+name: Recetteur
+version: "0.1.0"
+slug: recetteur
+description: >-
+  Vos recettes, le menu de la semaine, la liste de courses et la recette pas à
+  pas avec des quantités qui s'ajustent au nombre de personnes.
+url: https://github.com/jogaulupeau/recetteur
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: application
+boot: auto
+
+# L'interface passe par l'ingress : elle apparaît dans la barre latérale de
+# Home Assistant, sans port à ouvrir ni mot de passe à gérer.
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:chef-hat
+panel_title: Recettes
+# Toute la maison doit pouvoir ouvrir une recette ou cocher la liste de courses.
+# L'ingress continue d'exiger une session Home Assistant valide.
+panel_admin: false
+
+# Autorise l'ajout des courses à une liste « todo » de Home Assistant
+# (services todo.add_item, via le jeton fourni par le Supervisor).
+homeassistant_api: true
+
+# Tout ce que l'app écrit va dans /data : il survit aux mises à jour et fait
+# partie des sauvegardes Home Assistant.
+options:
+  portions_defaut: 4
+  ha_todo_entity: todo.shopping_list
+  log_level: info
+
+schema:
+  portions_defaut: int(1,20)
+  ha_todo_entity: str
+  log_level: list(trace|debug|info|warning|error|fatal)

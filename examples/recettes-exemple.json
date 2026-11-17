@@ -1,0 +1,142 @@
+{
+  "format": "recetteur/v1",
+  "recettes": [
+    {
+      "titre": "Spaghetti bolognaise",
+      "description": "La sauce mijotée du dimanche, qui se congèle très bien.",
+      "type": "plat",
+      "portions": 4,
+      "portions_unite": "personnes",
+      "temps_preparation": 20,
+      "temps_cuisson": 60,
+      "difficulte": "facile",
+      "cuisine": "italienne",
+      "tags": ["pâtes", "boeuf", "familial", "congélation"],
+      "ingredients": [
+        { "id": "huile", "nom": "huile d’olive", "quantite": 2, "unite": "c. à soupe", "rayon": "epicerie", "basique": true },
+        { "id": "oignon", "nom": "oignon", "nom_pluriel": "oignons", "quantite": 1, "rayon": "fruits-legumes", "note": "émincé" },
+        { "id": "ail", "nom": "ail", "quantite": 2, "unite": "gousse", "rayon": "fruits-legumes", "note": "écrasées" },
+        { "id": "carotte", "nom": "carotte", "quantite": 1, "rayon": "fruits-legumes", "note": "en petits dés" },
+        { "id": "boeuf", "nom": "viande de bœuf hachée", "quantite": 400, "unite": "g", "rayon": "viandes-poissons" },
+        { "id": "tomates", "nom": "tomates concassées en boîte", "quantite": 400, "unite": "g", "rayon": "epicerie" },
+        { "id": "concentre", "nom": "concentré de tomate", "quantite": 2, "unite": "c. à soupe", "rayon": "epicerie" },
+        { "id": "vin", "nom": "vin rouge", "quantite": 10, "unite": "cl", "rayon": "boissons", "optionnel": true },
+        { "id": "origan", "nom": "origan séché", "quantite": 1, "unite": "c. à café", "rayon": "condiments-epices", "fixe": true },
+        { "id": "spaghetti", "nom": "spaghetti", "quantite": 320, "unite": "g", "rayon": "epicerie" },
+        { "id": "parmesan", "nom": "parmesan râpé", "quantite": 40, "unite": "g", "rayon": "cremerie" },
+        { "id": "sel", "nom": "sel", "quantite": null, "basique": true },
+        { "id": "poivre", "nom": "poivre", "quantite": null, "basique": true }
+      ],
+      "etapes": [
+        { "titre": "Le fond de sauce", "texte": "Faites chauffer {{huile}} d’huile dans une sauteuse. Faites revenir l’oignon, l’ail et la carotte 5 minutes à feu moyen, en remuant.", "duree": 5, "ingredients": ["huile", "oignon", "ail", "carotte"] },
+        { "titre": "La viande", "texte": "Ajoutez {{boeuf}} de viande hachée et faites-la dorer en l’émiettant, 5 minutes. Salez, poivrez.", "duree": 5, "ingredients": ["boeuf", "sel", "poivre"] },
+        { "titre": "Le mijotage", "texte": "Versez le vin, laissez réduire 2 minutes, puis ajoutez les tomates, le concentré ({{concentre}}) et l’origan. Couvrez et laissez mijoter 45 minutes à feu doux.", "duree": 45, "ingredients": ["vin", "tomates", "concentre", "origan"] },
+        { "titre": "Les pâtes", "texte": "Faites cuire {{spaghetti}} de spaghetti dans une grande casserole d’eau bouillante salée, selon le temps indiqué sur le paquet. Égouttez.", "duree": 10, "ingredients": ["spaghetti"] },
+        { "titre": "Service", "texte": "Servez les pâtes nappées de sauce et saupoudrées de parmesan ({{parmesan}}).", "ingredients": ["parmesan"] }
+      ],
+      "conservation": "3 jours au réfrigérateur, 3 mois au congélateur (la sauce seule).",
+      "notes": "Doubler la sauce et congeler la moitié."
+    },
+    {
+      "titre": "Poulet rôti aux pommes de terre",
+      "type": "plat",
+      "portions": 4,
+      "temps_preparation": 15,
+      "temps_cuisson": 75,
+      "difficulte": "facile",
+      "cuisine": "française",
+      "tags": ["poulet", "four", "familial", "dimanche"],
+      "ingredients": [
+        { "id": "poulet", "nom": "poulet fermier", "quantite": 1, "unite": "", "note": "d’environ 1,6 kg", "rayon": "viandes-poissons", "fixe": true },
+        { "id": "patates", "nom": "pommes de terre", "quantite": 800, "unite": "g", "rayon": "fruits-legumes", "note": "à chair ferme" },
+        { "id": "citron", "nom": "citron", "quantite": 1, "rayon": "fruits-legumes" },
+        { "id": "ail", "nom": "ail", "quantite": 4, "unite": "gousse", "rayon": "fruits-legumes", "note": "en chemise" },
+        { "id": "thym", "nom": "thym", "quantite": 4, "unite": "brin", "rayon": "fruits-legumes" },
+        { "id": "beurre", "nom": "beurre", "quantite": 30, "unite": "g", "rayon": "cremerie" },
+        { "id": "huile", "nom": "huile d’olive", "quantite": 2, "unite": "c. à soupe", "rayon": "epicerie", "basique": true },
+        { "id": "sel", "nom": "sel", "quantite": null, "basique": true },
+        { "id": "poivre", "nom": "poivre", "quantite": null, "basique": true }
+      ],
+      "etapes": [
+        { "titre": "Préparer", "texte": "Préchauffez le four à 200 °C. Sortez le poulet du réfrigérateur 30 minutes avant. Glissez dans la cavité le citron coupé en deux, {{thym}} de thym et 2 gousses d’ail.", "ingredients": ["poulet", "citron", "thym", "ail"] },
+        { "texte": "Badigeonnez le poulet avec {{beurre}} de beurre mou. Salez et poivrez généreusement.", "ingredients": ["beurre", "sel", "poivre"] },
+        { "texte": "Épluchez les pommes de terre ({{patates}}), coupez-les en quartiers et mélangez-les avec {{huile}} d’huile d’olive et le reste de l’ail dans un grand plat. Posez le poulet dessus.", "ingredients": ["patates", "huile", "ail"] },
+        { "titre": "Cuisson", "texte": "Enfournez 1 h 15, en arrosant avec le jus de cuisson toutes les 20 minutes. Laissez reposer 10 minutes sous du papier d’aluminium avant de découper.", "duree": 75 }
+      ],
+      "notes": "Le temps de cuisson dépend du poids : comptez environ 45 minutes par kilo, plus 15 minutes."
+    },
+    {
+      "titre": "Salade de lentilles, feta et noix",
+      "type": "plat",
+      "portions": 4,
+      "temps_preparation": 15,
+      "temps_cuisson": 25,
+      "difficulte": "facile",
+      "tags": ["végétarien", "rapide", "salade", "été"],
+      "ingredients": [
+        { "id": "lentilles", "nom": "lentilles vertes", "quantite": 250, "unite": "g", "rayon": "epicerie" },
+        { "id": "feta", "nom": "feta", "quantite": 200, "unite": "g", "rayon": "cremerie" },
+        { "id": "noix", "nom": "noix", "quantite": 60, "unite": "g", "rayon": "epicerie" },
+        { "id": "oignon", "nom": "oignon rouge", "quantite": 1, "rayon": "fruits-legumes" },
+        { "id": "tomates", "nom": "tomates cerises", "quantite": 250, "unite": "g", "rayon": "fruits-legumes" },
+        { "id": "persil", "nom": "persil", "quantite": 1, "unite": "botte", "rayon": "fruits-legumes" },
+        { "id": "huile", "nom": "huile d’olive", "quantite": 4, "unite": "c. à soupe", "rayon": "epicerie", "basique": true, "groupe": "Vinaigrette" },
+        { "id": "vinaigre", "nom": "vinaigre balsamique", "quantite": 2, "unite": "c. à soupe", "rayon": "condiments-epices", "groupe": "Vinaigrette" },
+        { "id": "moutarde", "nom": "moutarde", "quantite": 1, "unite": "c. à café", "rayon": "condiments-epices", "groupe": "Vinaigrette" }
+      ],
+      "etapes": [
+        { "texte": "Rincez {{lentilles}} de lentilles et faites-les cuire 20 à 25 minutes dans de l’eau frémissante non salée. Égouttez et laissez tiédir.", "duree": 25, "ingredients": ["lentilles"] },
+        { "texte": "Émincez l’oignon, coupez les tomates en deux, ciselez le persil, concassez les noix et émiettez la feta.", "ingredients": ["oignon", "tomates", "persil", "noix", "feta"] },
+        { "texte": "Mélangez {{huile}} d’huile d’olive, {{vinaigre}} de vinaigre balsamique et {{moutarde}} de moutarde.", "ingredients": ["huile", "vinaigre", "moutarde"] },
+        { "texte": "Mélangez tous les ingrédients avec la vinaigrette. Servez tiède ou frais." }
+      ]
+    },
+    {
+      "titre": "Gratin de courgettes",
+      "type": "plat",
+      "portions": 6,
+      "temps_preparation": 20,
+      "temps_cuisson": 40,
+      "tags": ["végétarien", "four", "légumes"],
+      "ingredients": [
+        { "id": "courgettes", "nom": "courgettes", "quantite": 1.2, "unite": "kg", "rayon": "fruits-legumes" },
+        { "id": "creme", "nom": "crème fraîche épaisse", "quantite": 20, "unite": "cl", "rayon": "cremerie" },
+        { "id": "oeufs", "nom": "œuf", "nom_pluriel": "œufs", "quantite": 2, "rayon": "cremerie" },
+        { "id": "gruyere", "nom": "gruyère râpé", "quantite": 100, "unite": "g", "rayon": "cremerie" },
+        { "id": "ail", "nom": "ail", "quantite": 1, "unite": "gousse", "rayon": "fruits-legumes" },
+        { "id": "sel", "nom": "sel", "quantite": null, "basique": true },
+        { "id": "poivre", "nom": "poivre", "quantite": null, "basique": true }
+      ],
+      "etapes": [
+        { "texte": "Préchauffez le four à 180 °C. Coupez {{courgettes}} de courgettes en rondelles et faites-les revenir à la poêle 10 minutes.", "duree": 10, "ingredients": ["courgettes"] },
+        { "texte": "Battez {{oeufs}} œufs avec {{creme}} de crème, l’ail pressé, du sel et du poivre.", "ingredients": ["oeufs", "creme", "ail", "sel", "poivre"] },
+        { "texte": "Disposez les courgettes dans un plat, versez l’appareil, parsemez de gruyère ({{gruyere}}). Enfournez 30 minutes.", "duree": 30, "ingredients": ["gruyere"] }
+      ]
+    },
+    {
+      "titre": "Tarte aux pommes",
+      "type": "dessert",
+      "portions": 8,
+      "portions_unite": "parts",
+      "temps_preparation": 25,
+      "temps_cuisson": 35,
+      "temps_repos": 30,
+      "difficulte": "moyen",
+      "tags": ["tarte", "four", "goûter"],
+      "ingredients": [
+        { "id": "pate", "nom": "pâte brisée", "quantite": 1, "rayon": "boulangerie", "fixe": true },
+        { "id": "pommes", "nom": "pomme", "nom_pluriel": "pommes", "quantite": 5, "rayon": "fruits-legumes", "note": "type golden" },
+        { "id": "oeuf", "nom": "œuf", "nom_pluriel": "œufs", "quantite": 1, "rayon": "cremerie" },
+        { "id": "sucre", "nom": "sucre", "quantite": 60, "unite": "g", "rayon": "epicerie-sucree" },
+        { "id": "creme", "nom": "crème fraîche", "quantite": 10, "unite": "cl", "rayon": "cremerie" },
+        { "id": "beurre", "nom": "beurre", "quantite": 20, "unite": "g", "rayon": "cremerie" }
+      ],
+      "etapes": [
+        { "texte": "Préchauffez le four à 180 °C. Étalez la pâte dans un moule et piquez le fond à la fourchette.", "ingredients": ["pate"] },
+        { "texte": "Épluchez les pommes et coupez-les en fines lamelles. Disposez-les en rosace.", "ingredients": ["pommes"] },
+        { "texte": "Mélangez l’œuf, {{sucre}} de sucre et la crème ({{creme}}), versez sur les pommes, parsemez de noisettes de beurre ({{beurre}}).", "ingredients": ["oeuf", "sucre", "creme", "beurre"] },
+        { "texte": "Enfournez 35 minutes, jusqu’à ce que la tarte soit bien dorée.", "duree": 35 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "recetteur",
+  "version": "0.1.0",
+  "description": "Recettes, menu de la semaine, liste de courses et recette pas à pas — add-on Home Assistant.",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test",
+    "validate": "node shared/validate-cli.js",
+    "package": "node scripts/package-addon.js",
+    "sync-skill": "node scripts/sync-skill.js",
+    "seed": "node scripts/seed.js"
+  }
+}
