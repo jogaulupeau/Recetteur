@@ -4,7 +4,9 @@
   "description": "Recettes, menu de la semaine, liste de courses et recette pas à pas — add-on Home Assistant.",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
@@ -12,6 +14,7 @@
     "validate": "node shared/validate-cli.js",
     "package": "node scripts/package-addon.js",
     "sync-skill": "node scripts/sync-skill.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "skill:zip": "node scripts/zip-skill.js"
   }
 }

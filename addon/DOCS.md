@@ -29,10 +29,16 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 
 ## Ajouter des recettes (avec Claude)
 
-1. Installez le skill **recettes-recetteur** (dossier `skill/` du dépôt) dans Claude.
-2. Demandez une recette comme d'habitude ; Claude répond avec un bloc JSON.
+1. Téléversez le skill **recettes-recetteur** dans votre Claude (voir ci-dessous).
+2. Demandez une recette comme d'habitude, ou donnez-lui une recette à convertir ;
+   Claude répond avec un bloc JSON.
 3. Dans Recetteur : **Recettes → Ajouter**, collez le JSON (les ``` autour sont
    acceptés) ou déposez un fichier `.json`, vérifiez l'aperçu, importez.
+
+**Installer le skill** : `skill/recettes-recetteur.zip` (dans le dépôt GitHub) →
+claude.ai, *Réglages → Capacités → Skills → Téléverser un skill* (l'exécution de code doit
+être activée dans les capacités). Il s'active ensuite tout seul dès que vous parlez de
+recette. Dans Claude Code : dézipper dans `~/.claude/skills/`.
 
 Chaque recette est vérifiée avant l'import : les erreurs bloquantes et les
 corrections automatiques sont listées. Une recette déjà présente (même titre)

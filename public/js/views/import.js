@@ -90,7 +90,7 @@ export function render({ root }) {
       out,
       h('section', { class: 'card stack' },
         h('h2', { style: { margin: 0 } }, 'Créer des recettes avec Claude'),
-        h('p', { class: 'muted', style: { margin: 0 } }, 'Installez le skill « recettes-recetteur » (dossier skill/ du dépôt) dans Claude, puis demandez une recette comme d’habitude : Claude répond avec un JSON au bon format, à coller ci-dessus. Vous pouvez aussi demander plusieurs recettes d’un coup.'),
+        h('p', { class: 'muted', style: { margin: 0 } }, 'Téléversez le skill « recettes-recetteur » (fichier recettes-recetteur.zip du dépôt) dans Claude : Réglages → Capacités → Skills. Demandez ensuite une recette comme d’habitude : Claude répond avec un JSON au bon format, à coller ci-dessus. Vous pouvez aussi demander plusieurs recettes d’un coup, ou lui donner une recette à convertir.'),
         h('pre', { class: 'code card flat', style: { margin: 0, overflow: 'auto' } }, PROMPT),
         h('div', { class: 'row' },
           h('button', { class: 'btn sm', onclick: async () => { await navigator.clipboard.writeText(PROMPT); toast('Texte copié.', { type: 'ok' }); } }, icon('copy', 16), 'Copier le message'),

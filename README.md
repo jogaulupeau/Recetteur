@@ -26,9 +26,14 @@ Variables : `PORT` (8099), `HOST` (127.0.0.1 ; l'app Home Assistant utilise 0.0.
 
 ## Le skill Claude
 
-`skill/recettes-recetteur/` est un skill complet (instructions, référence du format, exemple et validateur Node
-autonome). Zippez le dossier ou copiez-le dans `.claude/skills/` pour l'utiliser. Il demande à Claude de produire
-un JSON `recetteur/v1` qu'on colle dans **Recettes → Ajouter**.
+`skill/recettes-recetteur/` est un skill complet (instructions, référence du format, exemple, validateur Node
+autonome) qui fait produire à Claude un JSON `recetteur/v1` à coller dans **Recettes → Ajouter**.
+
+- **Claude perso (claude.ai / application)** : téléversez [`skill/recettes-recetteur.zip`](skill/recettes-recetteur.zip)
+  dans *Réglages → Capacités → Skills → Téléverser un skill* (exécution de code activée). Pour un usage en
+  conversation, Claude donne un résumé puis un bloc JSON unique, et, s'il peut créer des fichiers, un `recettes.json`.
+- **Claude Code** : dézipper dans `~/.claude/skills/`.
+- Régénérer l'archive après toute modification du skill : `npm run skill:zip` (déterministe, vérifiée par un test).
 
 ```bash
 node shared/validate-cli.js recettes.json              # rapport
@@ -47,7 +52,7 @@ shared/    logique pure, utilisée par le navigateur, le serveur, les tests et l
              search.js  suggest.js (propositions, menu auto)  steps.js  dates.js  aisles.js  vocab.js
 server/    node:http, API JSON + fichiers statiques, stockage JSON atomique (store.js)
 public/    interface (hash routing, chemins relatifs : fonctionne sous l'ingress)
-skill/     skill Claude (copies des modules de shared/ — `npm run sync-skill`)
+skill/     skill Claude + recettes-recetteur.zip à téléverser (modules de shared/ copiés : `npm run sync-skill`, puis `npm run skill:zip`)
 addon/     app Home Assistant : config.yaml, Dockerfile, run.sh, DOCS.md ; addon/app/ est généré
 examples/  recettes d'exemple (chargeables depuis l'interface)
 ```
@@ -56,7 +61,7 @@ examples/  recettes d'exemple (chargeables depuis l'interface)
 
 - `npm test` : logique métier, API (serveur réel sur un port éphémère), cohérence du packaging.
 - **Après toute modification du code** : `npm run package` (recopie dans `addon/app/`, que Home Assistant construit)
-  et, si `shared/` a changé, `npm run sync-skill`. Un test échoue tant que ce n'est pas fait.
+  et, si `shared/` ou le skill ont changé, `npm run sync-skill` puis `npm run skill:zip`. Des tests échouent tant que ce n'est pas fait.
 - Pas de service worker ni de manifest PWA : dans Home Assistant c'est l'application mobile qui joue ce rôle.
 
 ## Idées pour la suite

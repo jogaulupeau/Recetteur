@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expectedFiles, TARGET } from '../scripts/package-addon.js';
 import { expected as skillExpected, SKILL } from '../scripts/sync-skill.js';
+import { buildZip, ZIP_PATH } from '../scripts/zip-skill.js';
 import { validateBundle } from '../shared/recipe.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,6 +34,10 @@ test('le skill embarque des copies à jour des modules : lancer « npm run sync-
     assert.ok(fs.existsSync(f), `${rel} manquant dans le skill`);
     assert.ok(fs.readFileSync(f).equals(content), `${rel} est périmé dans le skill`);
   }
+});
+
+test('l’archive du skill est à jour : lancer « npm run skill:zip »', () => {
+  assert.ok(fs.readFileSync(ZIP_PATH).equals(buildZip()), 'skill/recettes-recetteur.zip périmé');
 });
 
 test('l’exemple du skill et les exemples de l’appli sont valides, sans avertissement', () => {

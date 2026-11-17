@@ -15,6 +15,11 @@ test('unités : alias et inconnues', () => {
   assert.equal(canonicalUnit('mètre'), null);
 });
 
+test('« 2 cm de gingembre » : unité invariable, mise à l’échelle', () => {
+  assert.equal(canonicalUnit('cm'), 'cm');
+  assert.equal(fmt({ nom: 'gingembre', quantite: 2, unite: 'cm' }, 4, 8), '4 cm de gingembre');
+});
+
 test('nombres affichés à la française', () => {
   assert.equal(formatNumber(1.5), '1½');
   assert.equal(formatNumber(0.25), '¼');

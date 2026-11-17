@@ -21,13 +21,22 @@ La référence complète des champs est dans [references/format.md](references/f
 2. **Écrire la recette** avec des quantités réalistes et cohérentes pour le nombre de portions annoncé
    (une recette d'amateur, pas une approximation : poids de viande par personne, ratios de pâte, temps de cuisson).
 3. **La mettre au format** en respectant les règles ci-dessous.
-4. **Vérifier** : si tu peux exécuter du code, lance
-   `node scripts/validate-cli.js recettes.json` (Node ≥ 18, sans dépendance). Corrige jusqu'à « OK » **et** sans
-   avertissement, sauf avertissement volontaire. Sans exécution de code, relis la check-list en fin de document.
-5. **Rendre le résultat** : le JSON dans **un seul bloc de code** ```json, rien d'autre à l'intérieur (pas de
-   commentaires, pas de virgule finale). Si tu peux créer un fichier, joins-le aussi (`recettes.json`). Ajoute
-   avant le bloc un court résumé lisible (titre, temps, portions), et après : « Collez ce JSON dans Recetteur →
-   Recettes → Ajouter ». Plusieurs recettes : **un seul** JSON enveloppe (voir plus bas), pas un bloc par recette.
+4. **Vérifier** (si tu peux exécuter du code) : écris le JSON dans un fichier de travail (pas dans le dossier du
+   skill, en lecture seule), puis lance le validateur fourni, **en utilisant le chemin réel de ce skill** :
+   `node <dossier-du-skill>/scripts/validate-cli.js /tmp/recettes.json` (Node ≥ 18, aucune dépendance).
+   Corrige jusqu'à « OK » **et** sans avertissement, sauf avertissement volontaire. L'option `--normaliser`
+   écrit sur la sortie standard le JSON nettoyé, prêt à livrer. Sans exécution de code, relis la check-list en fin
+   de document : ne prétends jamais avoir validé ce que tu n'as pas exécuté.
+5. **Rendre le résultat** — l'utilisateur copie-colle le JSON dans l'application, donc :
+   - un court résumé lisible *avant* (titre, portions, temps, une phrase) ; **ne recopie pas la recette en prose**
+     en plus du JSON : le JSON est la recette ;
+   - le JSON dans **un seul bloc de code** ```json, complet, rien d'autre à l'intérieur (pas de commentaire, pas de
+     virgule finale), jamais coupé en plusieurs blocs ;
+   - si tu peux créer un fichier, joins aussi `recettes.json` (déposable tel quel dans l'application) ;
+   - une dernière ligne : « Collez ce JSON dans Recetteur → Recettes → Ajouter ».
+   Plusieurs recettes : **un seul** JSON enveloppe (voir plus bas), pas un bloc par recette.
+   Si l'utilisateur demande une modification d'une recette déjà produite, renvoie le JSON **complet** corrigé
+   (l'importeur propose de remplacer la version existante), pas un extrait.
 
 ## Format en bref
 
@@ -67,7 +76,7 @@ Une recette seule (objet sans enveloppe) ou un tableau sont aussi acceptés, mai
 
 - **Quantités = nombres JSON** (`1.5`, jamais `"1/2"` ni `"une demi"`). Tout ce qui se compte ou se pèse a
   `quantite` ; ce qui est « au goût » (sel, poivre, huile pour la poêle) a `"quantite": null`.
-- **Unités** : uniquement `g`, `kg`, `ml`, `cl`, `dl`, `l`, `c. à soupe`, `c. à café`, ou un mot comme `gousse`,
+- **Unités** : uniquement `g`, `kg`, `ml`, `cl`, `dl`, `l`, `c. à soupe`, `c. à café`, `cm`, ou un mot comme `gousse`,
   `pincée`, `tranche`, `botte`, `brin`, `feuille`, `sachet`, `boîte`, `pot`, `tête`, `morceau`, `noix`…
   Pour des pièces entières (2 oignons, 4 œufs), **n'indique pas d'unité**.
 - **`nom` sans la quantité ni la préparation** : « oignon », pas « 2 gros oignons émincés » (la préparation va

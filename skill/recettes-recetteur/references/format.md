@@ -34,7 +34,7 @@ de recettes sont aussi acceptés.) Tout champ inconnu est ignoré. Le validateur
 | `nom_pluriel` | texte | Pour les ingrédients comptés sans unité dont le pluriel n'est pas régulier (`œufs`, `pommes de terre`). |
 | `quantite` | nombre ou `null` | `null` = « au goût ». Jamais de texte (`"1/2"` est toléré mais à éviter : écris `0.5`). |
 | `quantite_max` | nombre | Fourchette : `quantite: 2, quantite_max: 3` → « 2 à 3 ». |
-| `unite` | texte | `g`, `kg`, `ml`, `cl`, `dl`, `l`, `c. à soupe`, `c. à café`, `pincée`, `gousse`, `tranche`, `botte`, `bouquet`, `branche`, `brin`, `feuille`, `sachet`, `boîte`, `verre`, `tasse`, `pot`, `tête`, `morceau`, `poignée`, `filet`, `noix`, `cube`, `bâton`, `rouleau`, `paquet`, `barquette`, `bocal`, `carré`, `trait`. Vide pour des pièces. Les écritures usuelles (`cuillère à soupe`, `cs`, `gr`, `litre`…) sont reconnues. |
+| `unite` | texte | `g`, `kg`, `ml`, `cl`, `dl`, `l`, `c. à soupe`, `c. à café`, `cm`, `pincée`, `gousse`, `tranche`, `botte`, `bouquet`, `branche`, `brin`, `feuille`, `sachet`, `boîte`, `verre`, `tasse`, `pot`, `tête`, `morceau`, `poignée`, `filet`, `noix`, `cube`, `bâton`, `rouleau`, `paquet`, `barquette`, `bocal`, `carré`, `trait`. Vide pour des pièces. Les écritures usuelles (`cuillère à soupe`, `cs`, `gr`, `litre`…) sont reconnues. |
 | `note` | texte | Préparation : `émincé`, `à température ambiante`. Affichée après le nom. |
 | `rayon` | texte | `fruits-legumes`, `boulangerie`, `viandes-poissons`, `cremerie`, `epicerie`, `epicerie-sucree`, `condiments-epices`, `surgeles`, `boissons`, `autre`. Deviné s'il manque, mais toujours le fournir. |
 | `basique` | booléen | Produit de placard (sel, poivre, huile, farine, sucre…) : listé à part dans les courses. |

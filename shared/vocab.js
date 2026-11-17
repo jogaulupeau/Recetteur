@@ -43,6 +43,7 @@ export const UNITES = {
   l: { famille: 'volume', facteur: 1000, abbr: true },
   'c. à soupe': { abbr: true },
   'c. à café': { abbr: true },
+  cm: { abbr: true }, // « 2 cm de gingembre »
   pincée: {},
   gousse: {},
   tranche: {},
