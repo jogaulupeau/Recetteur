@@ -57,6 +57,14 @@ liste blanche d'en-têtes dans les deux sens (ni cookies, ni `X-Forwarded-For`, 
 4 Mo ; pas de redirection suivie ; erreurs réseau sans adresse interne. Le décompte d'échecs d'authentification de Home Assistant (IP ban)
 ne s'applique qu'aux écrans de connexion, pas aux webhooks : les `401` du serveur MCP peuvent traverser sans risque de bannissement.
 
+**App « Recetteur MCP »** (`addon-mcp/`) : installe l'intégration sans HACS. Choix de conception : le privilège
+`homeassistant_config` en écriture est le plus sensible de l'ensemble ; il est donc porté par une app séparée d'une centaine de lignes
+(bibliothèque standard), et l'app Recetteur n'a aucun privilège élargi. L'app n'écrit que dans `custom_components/recetteur_mcp/` et
+`recetteur_mcp.json` (test : aucun autre fichier de la configuration n'est créé ni modifié), ne suit jamais un lien symbolique à ces
+emplacements, écrit le fichier en 0600 de façon atomique, ne déclare ni port, ni API Home Assistant/Supervisor, ni réseau hôte
+(test de packaging). L'intégration n'accepte le fichier que si l'identifiant est de 64 caractères [A-Za-z0-9_-] et l'URL en http(s) sans
+identifiants. Un défaut trouvé par les tests : après rotation du secret, l'ancien webhook restait actif ; corrigé (0.2.0).
+
 Interopérabilité vérifiée avec le client officiel `@modelcontextprotocol/sdk` 1.32.2 (connexion, 17 outils, ressource, appels).
 
 ## Performance (600 recettes, Chromium)
@@ -75,7 +83,7 @@ Interopérabilité vérifiée avec le client officiel `@modelcontextprotocol/sdk
 
 **Testé sans effet, retiré** : `<link rel="modulepreload">` des 30 modules (aucun gain mesuré, même à 250 ms de latence).
 
-**Non vérifié ici (à contrôler dans Home Assistant)** : l'adresse de l'ingress (172.30.32.2) et le comportement de `ingress_only` ;
+**Non vérifié ici (à contrôler dans Home Assistant)** : la construction de l'image de l'app Recetteur MCP (pas de Docker ici ; le script est testé hors conteneur) et le point de montage `homeassistant_config` (le script détecte `/homeassistant` ou `/config`) ; l'adresse de l'ingress (172.30.32.2) et le comportement de `ingress_only` ;
 la transmission des en-têtes `Sec-Fetch-*` par le proxy d'ingress (s'ils sont absents, la protection repose sur l'exigence de
 `Content-Type: application/json`, qui suffit seule contre les formulaires et `fetch` « simples »).
 

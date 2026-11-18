@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expectedFiles, TARGET } from '../scripts/package-addon.js';
+import { expectedFiles, TARGET, MCP_TARGET, expectedMcpFiles } from '../scripts/package-addon.js';
 import { expected as skillExpected, SKILL } from '../scripts/sync-skill.js';
 import { buildZip, ZIP_PATH } from '../scripts/zip-skill.js';
 import { validateBundle } from '../shared/recipe.js';
@@ -66,7 +66,7 @@ test('intégration Home Assistant recetteur_mcp : manifeste, HACS et traductions
   const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
   assert.equal(manifest.domain, 'recetteur_mcp');
   assert.equal(manifest.config_flow, true);
-  assert.deepEqual(manifest.dependencies, ['webhook']);
+  assert.deepEqual([...manifest.dependencies].sort(), ['persistent_notification', 'webhook']);
   assert.deepEqual(manifest.requirements, []); // aucune dépendance à installer
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   const hacs = JSON.parse(fs.readFileSync(path.join(ROOT, 'hacs.json'), 'utf8'));
@@ -81,6 +81,44 @@ test('intégration Home Assistant recetteur_mcp : manifeste, HACS et traductions
   assert.equal(fs.existsSync(path.join(ROOT, 'addon', 'app', 'custom_components')), false);
   // et la documentation en parle
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8'), /custom_components\/recetteur_mcp/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8'), /Recetteur MCP/);
+});
+
+test('app « Recetteur MCP » : la copie embarquée de l’intégration est à jour (npm run package)', () => {
+  for (const [rel, src] of expectedMcpFiles()) {
+    const copy = path.join(MCP_TARGET, rel);
+    assert.ok(fs.existsSync(copy), `${rel} manquant dans addon-mcp`);
+    assert.ok(fs.readFileSync(copy).equals(fs.readFileSync(src)), `${rel} est périmé dans addon-mcp`);
+  }
+  // pas de fichier en trop (hors sources) : ni cache Python ni reste
+  const found = [];
+  const stack = [MCP_TARGET];
+  while (stack.length) {
+    for (const e of fs.readdirSync(stack.pop(), { withFileTypes: true })) {
+      if (e.isDirectory()) stack.push(path.join(e.parentPath, e.name));
+      else found.push(path.relative(MCP_TARGET, path.join(e.parentPath, e.name)));
+    }
+  }
+  assert.deepEqual(found.sort(), [...expectedMcpFiles().keys()].sort());
+  assert.ok(!fs.existsSync(path.join(ROOT, 'addon-mcp', 'app', '__pycache__')));
+});
+
+test('app « Recetteur MCP » : un seul privilège (écrire la config HA), aucun port ni API', () => {
+  const dir = path.join(ROOT, 'addon-mcp');
+  const cfg = fs.readFileSync(path.join(dir, 'config.yaml'), 'utf8');
+  const code = cfg.replace(/#.*$/gm, ''); // les commentaires peuvent citer ce qui est absent
+  assert.match(code, /slug: recetteur_mcp/);
+  assert.match(code, /type: homeassistant_config\n\s+read_only: false/);
+  for (const forbidden of ['host_network', 'privileged', 'full_access', 'homeassistant_api', 'hassio_api', 'hassio_role', 'auth_api', 'docker_api', 'ports:', 'ingress', 'devices', 'apparmor: false'])
+    assert.ok(!code.includes(forbidden), `${forbidden} ne doit pas figurer dans la config de l'app`);
+  assert.match(code, /recetteur_url: url/);
+  for (const f of ['Dockerfile', 'build.yaml', 'run.sh', 'README.md', 'DOCS.md', 'CHANGELOG.md', 'icon.png', 'logo.png', 'app/start.py'])
+    assert.ok(fs.existsSync(path.join(dir, f)), `${f} manquant`);
+  assert.equal(fs.statSync(path.join(dir, 'run.sh')).mode & 0o100, 0o100, 'run.sh exécutable');
+  const docs = fs.readFileSync(path.join(dir, 'DOCS.md'), 'utf8');
+  assert.match(docs, /custom_components\/recetteur_mcp/);
+  assert.match(docs, /recetteur_mcp\.json/);
+  assert.match(docs, /[Rr]edémarr\w+\s+Home\s+Assistant/);
 });
 
 test('chaque outil MCP est documenté dans DOCS.md', () => {

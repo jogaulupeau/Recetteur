@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+- Documentation : nouvelle app compagnon **Recetteur MCP** (dossier `addon-mcp/`) qui installe l'intégration de relais pour l'accès
+  distant de Claude. L'app Recetteur n'a pas changé et n'a toujours aucun privilège élargi.
+
 ## 0.4.1
 
 - Documentation : accès distant au MCP sans ouvrir de port, par l'intégration Home Assistant `recetteur_mcp` (relais par webhook,

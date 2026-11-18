@@ -4,7 +4,9 @@
       "user": {
         "title": "Recetteur MCP",
         "description": "Adresse **interne** du serveur MCP de l'app Recetteur : `http://<nom d'hôte de l'app>:8100/mcp`. Le nom d'hôte figure sur la page « Informations » de l'app (en général `xxxxxxxx-recetteur`, ou `local-recetteur` pour une app locale). Le jeton `mcp_token` doit être renseigné dans l'app : sans lui, le serveur MCP est désactivé.",
-        "data": { "url": "Adresse du serveur MCP" }
+        "data": {
+          "url": "Adresse du serveur MCP"
+        }
       },
       "done": {
         "title": "URL à donner à Claude",
@@ -15,6 +17,9 @@
       "cannot_connect": "Le serveur MCP ne répond pas à cette adresse. Vérifiez le nom d'hôte, que l'app est démarrée et que l'option mcp_token est renseignée.",
       "invalid_url": "Adresse invalide (http://… ou https://…)."
     },
-    "abort": { "single_instance_allowed": "Recetteur MCP est déjà configuré." }
+    "abort": {
+      "single_instance_allowed": "Recetteur MCP est déjà configuré.",
+      "invalid_import": "Fichier de configuration de l'app Recetteur MCP invalide."
+    }
   }
 }

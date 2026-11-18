@@ -1,0 +1,33 @@
+name: Recetteur MCP
+version: "0.1.0"
+slug: recetteur_mcp
+description: >-
+  Accès distant de Claude à Recetteur par votre adresse Home Assistant (Nabu
+  Casa), sans ouvrir de port : installe et configure l'intégration de relais.
+url: https://github.com/jogaulupeau/recetteur
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: application
+boot: auto
+
+# Seul privilège : écrire dans la configuration de Home Assistant, pour y déposer l'intégration `recetteur_mcp` et son fichier de
+# configuration (deux emplacements, voir DOCS.md). C'est la raison d'être de cette app séparée : l'app Recetteur n'a, elle, aucun
+# privilège élargi. Aucun port, aucune API Home Assistant ou Supervisor.
+map:
+  - type: homeassistant_config
+    read_only: false
+
+options:
+  recetteur_url: "http://local-recetteur:8100/mcp"
+  remote_url: ""
+  retirer_integration: false
+
+schema:
+  # Adresse INTERNE du serveur MCP de l'app Recetteur : http://<nom d'hôte de l'app>:8100/mcp (voir sa page « Informations »).
+  recetteur_url: url
+  # Facultatif : votre adresse externe (https://xxxx.ui.nabu.casa), seulement pour afficher l'URL complète dans le journal.
+  remote_url: url?
+  # Retire l'intégration et son fichier de configuration, puis s'arrête (avant de désinstaller l'app).
+  retirer_integration: bool

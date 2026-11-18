@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Recetteur MCP",
+        "description": "**Internal** address of the Recetteur add-on's MCP server: `http://<add-on hostname>:8100/mcp`. The hostname is on the add-on's Info page. The `mcp_token` option must be set in the add-on, otherwise its MCP server is disabled.",
+        "data": {
+          "url": "MCP server address"
+        }
+      },
+      "done": {
+        "title": "URL to give to Claude",
+        "description": "In Claude, add a custom connector pointing to:\n\n`{url}`\n\nwith the request header `Authorization: Bearer <your mcp_token>`.\n\nThis address contains a secret: do not share it. It goes through your Home Assistant remote access (Nabu Casa): no port to open."
+      }
+    },
+    "error": {
+      "cannot_connect": "The MCP server does not answer at this address. Check the hostname, that the add-on is running and that mcp_token is set.",
+      "invalid_url": "Invalid address (http://… or https://…)."
+    },
+    "abort": {
+      "single_instance_allowed": "Recetteur MCP is already configured.",
+      "invalid_import": "Invalid configuration file from the Recetteur MCP app."
+    }
+  }
+}

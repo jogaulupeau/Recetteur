@@ -110,18 +110,24 @@ recevoir des **webhooks** sur cette même adresse : `https://….ui.nabu.casa/ap
 (dossier `custom_components/recetteur_mcp` du dépôt) y branche un relais vers le serveur MCP de l'app, joint **par le réseau interne**
 de Home Assistant : le port 8100 n'a donc **pas besoin d'être publié** (laissez-le désactivé dans l'onglet Réseau).
 
-1. **Installer l'intégration** : dans HACS, *Dépôts personnalisés* → `https://github.com/jogaulupeau/recetteur` (type *Intégration*),
-   télécharger « Recetteur MCP » ; ou copier `custom_components/recetteur_mcp` dans `/config/custom_components/`. Redémarrer Home Assistant.
-2. L'option `mcp_token` doit être renseignée dans l'app (sans jeton, le serveur MCP est désactivé).
-3. *Paramètres → Appareils et services → Ajouter une intégration → Recetteur MCP*. Saisissez l'adresse **interne** du serveur :
-   `http://<nom d'hôte de l'app>:8100/mcp`. Le nom d'hôte est affiché sur la page *Informations* de l'app (du type `xxxxxxxx-recetteur`).
-   L'assistant vérifie que le serveur répond, puis affiche l'**URL à donner à Claude**.
-4. Dans Claude : connecteur personnalisé vers cette URL, avec l'en-tête `Authorization: Bearer VOTRE_JETON`.
+**Méthode recommandée : l'app « Recetteur MCP »** (dossier `addon-mcp/` du même dépôt, à installer depuis la même boutique). Elle dépose
+l'intégration et sa configuration dans Home Assistant à votre place, sans HACS, et garde le privilège « écrire dans la configuration »
+**hors** de l'app Recetteur, qui n'en a aucun.
+
+1. L'option `mcp_token` doit être renseignée dans l'app Recetteur (sans jeton, le serveur MCP est désactivé).
+2. Installer l'app **Recetteur MCP**, renseigner `recetteur_url` : `http://<nom d'hôte de l'app Recetteur>:8100/mcp` (le nom d'hôte est
+   affiché sur la page *Informations* de l'app Recetteur, du type `xxxxxxxx-recetteur`), puis la démarrer et **redémarrer Home Assistant**.
+3. Une notification « Recetteur MCP » donne l'**URL à saisir dans Claude** : connecteur personnalisé avec l'en-tête
+   `Authorization: Bearer VOTRE_JETON`.
+
+*Autre méthode, sans app* : dans HACS, *Dépôts personnalisés* → `https://github.com/jogaulupeau/recetteur` (type *Intégration*), ou copie de
+`custom_components/recetteur_mcp` dans `/config/custom_components/` ; après redémarrage, *Appareils et services → Ajouter une
+intégration → Recetteur MCP*, avec la même adresse interne.
 
 Sécurité : il faut **deux secrets** pour utiliser le MCP, l'identifiant (aléatoire, 64 caractères) dans l'URL du webhook, et le jeton, que le
 serveur MCP vérifie lui-même (le relais ne le contourne pas). Le relais ne transmet que quelques en-têtes (ni cookies ni en-têtes
 arbitraires), refuse les requêtes de navigateur (`Origin`), n'accepte que `POST`, limite la taille à 4 Mo, et ne révèle aucune adresse
-interne en cas de panne. Ne partagez pas l'URL. Pour supprimer l'accès distant : supprimez l'intégration (le webhook disparaît).
+interne en cas de panne. Ne partagez pas l'URL. Pour supprimer l'accès distant : option `retirer_integration` de l'app Recetteur MCP (ou suppression de l'intégration : le webhook disparaît).
 *Limite connue* : tous les accès passent par Home Assistant, donc le blocage d'adresse du serveur MCP (10 jetons faux en 1 minute)
 s'applique à l'ensemble des clients distants ; il est sans effet sur l'accès local direct.
 

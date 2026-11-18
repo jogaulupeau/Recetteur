@@ -1,6 +1,7 @@
 """Configuration de l'intégration Recetteur MCP : adresse du serveur MCP, puis affichage de l'URL à donner à Claude."""
 from __future__ import annotations
 
+import json
 from typing import Any
 from urllib.parse import urlparse
 
@@ -9,9 +10,10 @@ import voluptuous as vol
 from homeassistant.components import webhook
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.network import NoURLAvailableError
 
 from .const import CONF_URL, CONF_WEBHOOK_ID, DEFAULT_URL, DOMAIN
+from .helpers import webhook_url
+from .managed import parse_managed
 
 PING = {"jsonrpc": "2.0", "id": 1, "method": "ping"}
 
@@ -47,6 +49,16 @@ class RecetteurMcpConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
+        """Création silencieuse depuis le fichier géré par l'app Recetteur MCP (voir __init__.async_setup)."""
+        if self._async_current_entries():
+            return self.async_abort(reason="single_instance_allowed")
+        try:
+            data = parse_managed(json.dumps(import_data))
+        except ValueError:
+            return self.async_abort(reason="invalid_import")
+        return self.async_create_entry(title="Recetteur MCP", data=data)
+
     async def async_step_done(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Affiche l'URL du webhook : c'est celle à saisir dans le connecteur de Claude."""
         if user_input is not None:
@@ -54,10 +66,7 @@ class RecetteurMcpConfigFlow(ConfigFlow, domain=DOMAIN):
                 title="Recetteur MCP",
                 data={CONF_URL: self._url, CONF_WEBHOOK_ID: self._webhook_id},
             )
-        try:
-            url = webhook.async_generate_url(self.hass, self._webhook_id, allow_internal=False, allow_ip=False)
-        except NoURLAvailableError:
-            url = f"https://VOTRE-ADRESSE-EXTERNE/api/webhook/{self._webhook_id}"
+        url = webhook_url(self.hass, self._webhook_id)
         return self.async_show_form(step_id="done", description_placeholders={"url": url})
 
     async def _reachable(self, url: str) -> bool:
