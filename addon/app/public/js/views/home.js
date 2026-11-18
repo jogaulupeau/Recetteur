@@ -3,7 +3,8 @@ import { api } from '../api.js';
 import { state, entry } from '../state.js';
 import { recipeCard, defaultServings, loadExamples } from '../cards.js';
 import { pickRecipe } from '../picker.js';
-import { plate, tintOf, emptyPlate } from '../art.js';
+import { tintOf, emptyPlate } from '../art.js';
+import { visual } from '../photo.js';
 import { suggest } from '../../shared/suggest.js';
 import { today, addDays, dayName, dayMonth, weekStart } from '../../shared/dates.js';
 import { fmtTime, SLOT_LABELS } from '../format.js';
@@ -36,7 +37,7 @@ export async function render({ root }) {
     const mealRow = (m) => {
       const e = entry(m.recipeId);
       return e ? h('div', { class: `meal ${m.fait ? 'done' : ''}`, 'data-type': e.recette.type, 'data-tint': tintOf(e.recette) },
-        plate(e.recette, { className: 'avatar' }),
+        visual(e, { className: 'avatar' }),
         h('div', {}, h('a', { class: 'meal-title', href: `#/recette/${encodeURIComponent(e.id)}?p=${m.servings}` }, e.recette.titre),
           h('div', { class: 'meal-sub' }, `${m.servings} pers.`, totalTime(e.recette) ? ` · ${fmtTime(totalTime(e.recette))}` : '')),
         h('a', { class: 'btn sm primary', href: `#/recette/${encodeURIComponent(e.id)}/cuisiner?p=${m.servings}&repas=${m.id}` }, icon('play', 16), 'Cuisiner')) : null;

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Photo pour chaque recette : depuis la fiche (bouton ou glisser-déposer) et, à la fin d'une recette en mode
+  cuisine, « Photographier mon plat ». Elle remplace l'illustration dans les listes, le menu et le mode cuisine.
+- Les photos sont redimensionnées et recompressées par le navigateur avant l'envoi (≈ 300 Ko, plus une vignette) ;
+  les métadonnées EXIF, position GPS comprise, sont supprimées. Stockage dans `/data/photos`.
+- Illustrations générées d'après les ingrédients réels de la recette.
+
 ## 0.2.0
 
 - Minuteurs côté serveur : visibles sur toutes les pages, conservés au rechargement et au redémarrage,

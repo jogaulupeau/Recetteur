@@ -31,5 +31,17 @@ export const api = {
   post: (p, b = {}) => call('POST', p, b),
   put: (p, b) => call('PUT', p, b),
   patch: (p, b) => call('PATCH', p, b),
+  /** Envoi binaire (image) : le corps est un Blob, pas du JSON. */
+  putRaw: async (p, blob) => {
+    let res;
+    try {
+      res = await fetch(new URL(p, BASE), { method: 'PUT', headers: { 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+    } catch {
+      throw new ApiError('Serveur injoignable. Vérifiez que l’application est démarrée.', 0);
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new ApiError(data?.erreur || `Erreur ${res.status}`, res.status, data);
+    return data;
+  },
   del: (p) => call('DELETE', p),
 };

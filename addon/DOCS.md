@@ -63,6 +63,21 @@ peut être ignorée, remplacée ou copiée.
   multiples (sonnerie + vibration), écran maintenu allumé, flèches du clavier ou
   glissement du doigt pour avancer.
 
+## Photos
+
+Chaque recette peut avoir sa photo : sur la fiche, **Ajouter une photo** (sur téléphone : appareil photo ou
+galerie) ou glissez une image sur la zone de l'image ; à la fin d'une recette en mode cuisine,
+**Photographier mon plat**. La photo remplace l'assiette illustrée partout (liste, menu, accueil, mode cuisine).
+
+- Avant l'envoi, le navigateur **réduit et recompresse** l'image (1500 px, ≈ 300 Ko ; une vignette de 520 px sert aux
+  listes). Ce ré-encodage **supprime les métadonnées EXIF**, dont la position GPS de la prise de vue.
+- Formats acceptés : JPEG, PNG, WebP (les photos HEIC sont lues par Safari ; ailleurs, convertissez-les d'abord).
+- Les photos sont dans `/data/photos`, donc **dans les sauvegardes Home Assistant**. Elles ne sont **pas** incluses dans
+  l'export JSON d'une recette (qui ne contient que le texte) : une recette réimportée garde sa photo si elle existe déjà
+  (mode « remplacer »), mais une photo ne voyage pas d'une installation à l'autre.
+- Supprimer une recette supprime ses photos. « Retirer » rend l'illustration.
+- Le champ `image` d'une recette (une adresse web) reste possible ; une photo envoyée a toujours la priorité.
+
 ## Minuteurs et alerte sur une enceinte
 
 Les étapes qui comportent une attente (cuisson, repos, mijotage) proposent un bouton **Lancer le
@@ -87,7 +102,8 @@ Exemple pour une enceinte Sonos avec Piper : `alerte_media_player: media_player.
 ## Vos données
 
 Tout ce que l'app écrit va dans son volume `/data` : `recettes.json`, `menu.json`,
-`etat.json` (courses cochées, minuteurs en cours) (et une copie `.bak` de la version précédente de chacun). Ce volume
+`etat.json` (courses cochées, minuteurs en cours), chacun avec une copie `.bak` de sa version précédente, et le dossier
+`photos/`. Ce volume
 **survit aux redémarrages et aux mises à jour** et est inclus dans les
 sauvegardes Home Assistant. Un fichier illisible n'est jamais écrasé : il est
 mis de côté sous `*.corrompu`.

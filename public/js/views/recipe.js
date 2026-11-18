@@ -1,10 +1,10 @@
-import { h, icon, stepper, stars, toast, confirmDialog, clear } from '../dom.js';
+import { h, icon, stepper, stars, toast, confirmDialog, clear, fill } from '../dom.js';
 import { api } from '../api.js';
 import { entry, dropEntry, patchEntry } from '../state.js';
 import { favButton, defaultServings } from '../cards.js';
 import { addToMenuDialog } from '../picker.js';
 import { fmtTime, typeLabel, ago } from '../format.js';
-import { plate } from '../art.js';
+import { visual, photoActions, sendPhoto } from '../photo.js';
 import { formatIngredient } from '../../shared/quantity.js';
 import { stepSegments, stepTimers } from '../../shared/steps.js';
 import { stepTimerButtons, alertControl } from '../timers.js';
@@ -63,6 +63,22 @@ export function render({ params: [id], query, root }) {
     if (memo.value !== e.memo) { patchEntry(await api.patch(`recettes/${e.id}`, { memo: memo.value })); toast('Notes enregistrées.'); }
   } }, e.memo);
 
+  // Photo de la recette (sinon l'image indiquée dans la recette, sinon l'illustration). Glisser-déposer possible.
+  const media = h('div', { class: 'hero-media' });
+  const drawMedia = () => fill(media, visual(e, { className: 'plate', fit: 'slice', thumb: false }), photoActions(e, { onChange: drawMedia }));
+  drawMedia();
+  media.addEventListener('dragover', (ev) => (ev.preventDefault(), media.classList.add('drop')));
+  media.addEventListener('dragleave', () => media.classList.remove('drop'));
+  media.addEventListener('drop', async (ev) => {
+    ev.preventDefault();
+    media.classList.remove('drop');
+    const file = [...(ev.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('image/'));
+    if (!file) return;
+    media.classList.add('busy');
+    await sendPhoto(e, file, drawMedia);
+    media.classList.remove('busy');
+  });
+
   async function remove() {
     if (!(await confirmDialog(`Supprimer « ${r.titre} » ? Elle sera aussi retirée du menu.`, { ok: 'Supprimer', danger: true }))) return;
     await api.del(`recettes/${e.id}`);
@@ -85,7 +101,7 @@ export function render({ params: [id], query, root }) {
   root.append(
     h('a', { class: 'btn ghost sm', href: '#/recettes' }, icon('left', 16), 'Recettes'),
     h('div', { class: 'hero', 'data-type': r.type },
-      r.image ? h('img', { class: 'plate', src: r.image, alt: '', style: { objectFit: 'cover' }, onerror: (ev) => ev.target.replaceWith(plate(r, { fit: 'slice' })) }) : plate(r, { fit: 'slice' }),
+      media,
       h('div', { class: 'hero-text' },
         h('div', { class: 'row between' }, h('div', { class: 'row' }, h('span', { class: 'badge' }, typeLabel(r.type)), r.tags.map((t) => h('span', { class: 'tag' }, t))), favButton(e)),
         h('h1', {}, r.titre),

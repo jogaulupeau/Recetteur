@@ -6,6 +6,7 @@ import { defaultServings } from '../cards.js';
 import { formatIngredient } from '../../shared/quantity.js';
 import { stepSegments, stepTimers } from '../../shared/steps.js';
 import { stepTimerButtons, alertControl } from '../timers.js';
+import { visual, pickPhoto, sendPhoto } from '../photo.js';
 import { today } from '../../shared/dates.js';
 
 export function render({ params: [id], query, root }) {
@@ -86,6 +87,15 @@ export function render({ params: [id], query, root }) {
       append(body, [
         h('div', { class: 'cook-kicker' }, 'Terminé'),
         h('h2', { style: { fontSize: '2rem' } }, 'Bon appétit ! 🍽️'),
+        e.photo?.full ? visual(e, { className: 'cook-photo', thumb: false, fit: 'slice' }) : null,
+        h('button', { class: 'btn lg', style: { justifySelf: 'start' }, type: 'button', onclick: async (ev) => {
+          const btn = ev.currentTarget; // `currentTarget` est nul une fois l'événement terminé : on le garde avant d'attendre
+          const file = await pickPhoto();
+          if (!file) return;
+          btn.disabled = true;
+          await sendPhoto(e, file, drawBody);
+          drawBody();
+        } }, icon('camera', 22), e.photo?.full ? 'Changer la photo de mon plat' : 'Photographier mon plat'),
         h('div', { class: 'stack tight' }, h('p', { class: 'muted', style: { margin: 0 } }, 'Qu’en avez-vous pensé ?'),
           stars(rating, async (v) => { rating = v; patchEntry(await api.patch(`recettes/${e.id}`, { etoiles: v })); drawBody(); })),
         r.conservation ? h('div', { class: 'card flat' }, h('strong', {}, 'Conservation'), h('p', { style: { margin: 0 } }, r.conservation)) : null,

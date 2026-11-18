@@ -2,7 +2,8 @@ import { h, icon, toast } from './dom.js';
 import { api } from './api.js';
 import { patchEntry, state } from './state.js';
 import { fmtTime, ago, typeLabel } from './format.js';
-import { plate, tintOf } from './art.js';
+import { tintOf } from './art.js';
+import { visual } from './photo.js';
 import { totalTime } from '../shared/recipe.js';
 
 /** Servings par défaut : la taille du foyer pour des plats « pour N personnes », sinon la quantité de la recette. */
@@ -40,7 +41,7 @@ export function metaLine(e) {
 export function recipeCard(e, { reasons = [], manquants = [] } = {}) {
   const r = e.recette;
   return h('a', { class: 'rcard', href: `#/recette/${encodeURIComponent(e.id)}`, 'data-type': r.type, 'data-tint': tintOf(r) },
-    r.image ? h('img', { class: 'cover', src: r.image, alt: '', loading: 'lazy', onerror: (ev) => ev.target.replaceWith(plate(r)) }) : plate(r),
+    visual(e, { className: 'cover' }),
     favButton(e),
     h('div', { class: 'rcard-body' },
       h('span', { class: 'badge' }, typeLabel(r.type)),

@@ -14,6 +14,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, '..', 'public');
 const SHARED = path.join(ROOT, '..', 'shared');
 const MAX_BODY = 8 * 1024 * 1024;
+const MAX_PHOTO = 6 * 1024 * 1024; // le navigateur redimensionne avant l'envoi (≈ 300 Ko) : c'est un garde-fou
 const SLOTS = ['matin', 'midi', 'soir'];
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -27,6 +28,17 @@ const bad = (msg) => new HttpError(400, msg);
 const notFound = (msg = 'Introuvable.') => new HttpError(404, msg);
 const CREATED = Symbol('created');
 const created = (body) => ({ [CREATED]: true, body });
+const FILE = Symbol('file');
+const fileOut = (file, type, cache) => ({ [FILE]: true, file, type, cache });
+
+/** Type d'image d'après les premiers octets (on ne se fie ni à l'en-tête ni à l'extension). */
+export function sniffImage(b) {
+  if (b.length > 12 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { type: 'image/jpeg', ext: 'jpg' };
+  if (b.length > 12 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { type: 'image/png', ext: 'png' };
+  if (b.length > 12 && b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP') return { type: 'image/webp', ext: 'webp' };
+  return null;
+}
+const IMG_TYPE = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -73,7 +85,7 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     return id;
   }
   const newEntry = (id, recette) => ({
-    id, recette, favori: false, etoiles: 0, memo: '', derniere_cuisson: null, nb_cuissons: 0, cree_le: now(), modifie_le: now(),
+    id, recette, photo: null, favori: false, etoiles: 0, memo: '', derniere_cuisson: null, nb_cuissons: 0, cree_le: now(), modifie_le: now(),
   });
 
   function refreshCooked(recipeId) {
@@ -91,10 +103,10 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
 
   // ------------------------------------------------------------------ routes
   const routes = [];
-  const route = (method, pattern, handler) => {
+  const route = (method, pattern, handler, { raw = false } = {}) => {
     const keys = [];
     const re = new RegExp('^' + pattern.replace(/:([a-z]+)/g, (_, k) => (keys.push(k), '([^/]+)')) + '/?$');
-    routes.push({ method, re, keys, handler });
+    routes.push({ method, re, keys, handler, raw });
   };
 
   route('GET', '/api/config', () => ({
@@ -139,8 +151,57 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     return e;
   });
 
+  // --- Photos : fichiers dans <data>/photos, une version « complète » et une vignette (réalisée par le navigateur).
+  const photosDir = path.join(dataDir, 'photos');
+  const photoFile = (id, kind, ext) => path.join(photosDir, `${id}.${kind}.${ext}`);
+  const SAFE_ID = /^[a-z0-9][a-z0-9-]*$/;
+  function dropPhotoFiles(id) {
+    if (!SAFE_ID.test(id) || !fs.existsSync(photosDir)) return;
+    for (const f of fs.readdirSync(photosDir)) if (f.startsWith(`${id}.full.`) || f.startsWith(`${id}.thumb.`)) fs.rmSync(path.join(photosDir, f), { force: true });
+  }
+
+  route('PUT', '/api/recettes/:id/photo', ({ params, query, body }) => {
+    const e = entry(params.id);
+    if (!SAFE_ID.test(e.id)) throw bad('Identifiant de recette invalide.');
+    if (!Buffer.isBuffer(body) || !body.length) throw bad('Aucune image reçue.');
+    const img = sniffImage(body);
+    if (!img) throw new HttpError(415, 'Format non pris en charge : envoyez une image JPEG, PNG ou WebP.');
+    const kind = query.get('t') === 'vignette' ? 'thumb' : 'full';
+    fs.mkdirSync(photosDir, { recursive: true });
+    const target = photoFile(e.id, kind, img.ext);
+    // Remplace l'ancienne version (l'extension peut différer), écriture atomique.
+    for (const old of fs.readdirSync(photosDir)) if (old.startsWith(`${e.id}.${kind}.`)) fs.rmSync(path.join(photosDir, old), { force: true });
+    fs.writeFileSync(`${target}.tmp`, body);
+    fs.renameSync(`${target}.tmp`, target);
+    recettes.update(() => {
+      e.photo = { ...(e.photo ?? {}), v: Date.now(), [kind]: img.ext };
+      e.modifie_le = now();
+    });
+    return e;
+  }, { raw: true });
+
+  route('GET', '/api/recettes/:id/photo', ({ params, query }) => {
+    const e = entry(params.id);
+    const kind = query.get('t') === 'vignette' && e.photo?.thumb ? 'thumb' : 'full';
+    const ext = e.photo?.[kind];
+    const file = ext && SAFE_ID.test(e.id) ? photoFile(e.id, kind, ext) : null;
+    if (!file || !fs.existsSync(file)) throw notFound('Cette recette n’a pas de photo.');
+    // `v` (version) change à chaque envoi : l'URL est alors immuable et peut être mise en cache à vie.
+    return fileOut(file, IMG_TYPE[ext], query.get('v') ? 'public, max-age=31536000, immutable' : 'no-cache');
+  });
+
+  route('DELETE', '/api/recettes/:id/photo', ({ params }) => {
+    const e = entry(params.id);
+    dropPhotoFiles(e.id);
+    recettes.update(() => {
+      e.photo = null;
+    });
+    return e;
+  });
+
   route('DELETE', '/api/recettes/:id', ({ params }) => {
     entry(params.id);
+    dropPhotoFiles(params.id);
     recettes.update((d) => delete d.recettes[params.id]);
     menu.update((d) => (d.repas = d.repas.filter((r) => r.recipeId !== params.id)));
     return { ok: true };
@@ -350,6 +411,18 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     }
   }
 
+  async function readRaw(req) {
+    if (Number(req.headers['content-length']) > MAX_PHOTO) throw new HttpError(413, 'Image trop volumineuse (6 Mo maximum).');
+    const chunks = [];
+    let size = 0;
+    for await (const c of req) {
+      size += c.length;
+      if (size > MAX_PHOTO) throw new HttpError(413, 'Image trop volumineuse (6 Mo maximum).');
+      chunks.push(c);
+    }
+    return Buffer.concat(chunks);
+  }
+
   const send = (res, status, payload, headers = {}) => {
     const body = JSON.stringify(payload);
     res.writeHead(status, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store', ...headers });
@@ -365,9 +438,14 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Introuvable');
     }
+    return sendFile(req, res, file, MIME[path.extname(file)] ?? 'application/octet-stream', 'no-cache');
+  }
+
+  /** Envoie un fichier avec ETag (304 si inchangé). */
+  function sendFile(req, res, file, type, cache) {
     const st = fs.statSync(file);
     const etag = `W/"${st.size}-${Math.round(st.mtimeMs)}"`;
-    const headers = { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream', ETag: etag, 'Cache-Control': 'no-cache' };
+    const headers = { 'Content-Type': type, ETag: etag, 'Cache-Control': cache };
     if (req.headers['if-none-match'] === etag) {
       res.writeHead(304, headers);
       return res.end();
@@ -392,7 +470,8 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
         matched = true;
         if (r.method !== req.method) continue;
         const params = Object.fromEntries(r.keys.map((k, i) => [k, m[i + 1]]));
-        const out = await r.handler({ params, query: url.searchParams, body: await readBody(req) });
+        const out = await r.handler({ params, query: url.searchParams, body: await (r.raw ? readRaw(req) : readBody(req)) });
+        if (out?.[FILE]) return sendFile(req, res, out.file, out.type, out.cache);
         return out?.[CREATED] ? send(res, 201, out.body) : send(res, 200, out);
       }
       throw matched ? new HttpError(405, 'Méthode non autorisée.') : notFound('Route inconnue.');

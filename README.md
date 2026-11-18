@@ -16,6 +16,12 @@ mais utilisable seul.
 - **Recettes générées avec Claude** : un [skill](skill/recettes-recetteur/SKILL.md) impose le format d'import.
 - Données en simples fichiers JSON.
 
+## Photos
+
+Une photo par recette, envoyée depuis la fiche (bouton ou glisser-déposer) ou à la fin du mode cuisine. Redimensionnée et
+recompressée **dans le navigateur** (≈ 300 Ko + vignette), EXIF/GPS supprimé, stockée dans `data/photos/` (`PUT /api/recettes/:id/photo`,
+format vérifié sur les octets, 6 Mo max). Priorité d'affichage : photo > champ `image` > assiette illustrée.
+
 ## Design
 
 « Carnet d'épicerie fine » : papier et encre verte, tomate et beurre. Titres en [Fraunces](https://github.com/undercasetype/Fraunces)
