@@ -50,6 +50,13 @@ Modèle de menace : c'est le seul accès qui ne passe pas par l'ingress, donc le
 | Fuite par les erreurs | Erreur interne = message générique ; le jeton n'est jamais journalisé |
 | Corps énorme / lent | 4 Mo max, délais d'en-têtes et de requête |
 
+**Accès distant par webhook** (`custom_components/recetteur_mcp`) : l'ingress ne convient pas (session de navigateur obligatoire), le webhook est
+la seule porte non authentifiée de Home Assistant sur l'adresse Nabu Casa. Mesures (testées dans `tests_ha/` avec un vrai Home Assistant
+de test et le vrai serveur Node) : identifiant secret de 64 caractères (256 bits) + jeton Bearer vérifié par le serveur MCP (le relais ne l'examine pas) ;
+liste blanche d'en-têtes dans les deux sens (ni cookies, ni `X-Forwarded-For`, ni en-têtes internes) ; `Origin` refusé ; `POST` seul ;
+4 Mo ; pas de redirection suivie ; erreurs réseau sans adresse interne. Le décompte d'échecs d'authentification de Home Assistant (IP ban)
+ne s'applique qu'aux écrans de connexion, pas aux webhooks : les `401` du serveur MCP peuvent traverser sans risque de bannissement.
+
 Interopérabilité vérifiée avec le client officiel `@modelcontextprotocol/sdk` 1.32.2 (connexion, 17 outils, ressource, appels).
 
 ## Performance (600 recettes, Chromium)

@@ -54,7 +54,8 @@ Home Assistant en développement).
 
 Serveur MCP intégré (HTTP « streamable », `server/mcp.js`, 17 outils + ressource `recetteur://format`), sur un port dédié protégé par jeton :
 créer des recettes, lire avec quantités ajustées, planifier le menu, courses, minuteurs. Activation, connexion (Claude Code, claude.ai) et
-sécurité : [addon/DOCS.md](addon/DOCS.md). En local : `RECETTEUR_MCP_TOKEN=$(openssl rand -hex 24) npm start`
+sécurité : [addon/DOCS.md](addon/DOCS.md). **À distance sans ouvrir de port** : l'intégration Home Assistant
+`custom_components/recetteur_mcp` (HACS ou copie) relaie le MCP par un webhook, donc par votre adresse Nabu Casa (tests : `tests_ha/`, `pip install -r requirements_test.txt && pytest`). En local : `RECETTEUR_MCP_TOKEN=$(openssl rand -hex 24) npm start`
 (port 8100 ; `RECETTEUR_MCP_PORT`, `RECETTEUR_MCP_READONLY=1`).
 
 ## Sécurité et performance

@@ -61,6 +61,28 @@ test('skill : en-tête conforme aux limites de claude.ai (name ≤ 64, descripti
   assert.match(md, /^---\nname: .+\ndescription: .+\n---\n/);
 });
 
+test('intégration Home Assistant recetteur_mcp : manifeste, HACS et traductions cohérents', () => {
+  const dir = path.join(ROOT, 'custom_components', 'recetteur_mcp');
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.domain, 'recetteur_mcp');
+  assert.equal(manifest.config_flow, true);
+  assert.deepEqual(manifest.dependencies, ['webhook']);
+  assert.deepEqual(manifest.requirements, []); // aucune dépendance à installer
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+  const hacs = JSON.parse(fs.readFileSync(path.join(ROOT, 'hacs.json'), 'utf8'));
+  assert.ok(hacs.name && hacs.homeassistant);
+  // mêmes clés de traduction en français et en anglais
+  const keys = (o, p = '') => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? keys(v, `${p}${k}.`) : [`${p}${k}`])).sort();
+  const fr = JSON.parse(fs.readFileSync(path.join(dir, 'translations', 'fr.json'), 'utf8'));
+  const en = JSON.parse(fs.readFileSync(path.join(dir, 'translations', 'en.json'), 'utf8'));
+  assert.deepEqual(keys(fr), keys(en));
+  assert.match(fr.config.step.done.description, /\{url\}/);
+  // l'intégration n'est pas embarquée dans l'image de l'app (elle s'installe dans Home Assistant, pas dans le conteneur)
+  assert.equal(fs.existsSync(path.join(ROOT, 'addon', 'app', 'custom_components')), false);
+  // et la documentation en parle
+  assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8'), /custom_components\/recetteur_mcp/);
+});
+
 test('chaque outil MCP est documenté dans DOCS.md', () => {
   const docs = fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8');
   const names = buildTools({ dispatch: async () => ({ status: 200, body: {} }), stores: { recettes: { data: { recettes: {} } } }, cfg: {} }).map((t) => t.name);

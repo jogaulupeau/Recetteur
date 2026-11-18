@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- Documentation : accès distant au MCP sans ouvrir de port, par l'intégration Home Assistant `recetteur_mcp` (relais par webhook,
+  donc par l'adresse Nabu Casa). L'app elle-même n'a pas changé.
+
 ## 0.4.0
 
 - **Serveur MCP** : Claude peut créer des recettes, les lire (quantités ajustées), planifier le menu, calculer les courses et lancer des

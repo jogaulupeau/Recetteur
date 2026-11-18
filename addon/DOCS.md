@@ -95,11 +95,36 @@ une recette par ce canal.
 - **Claude Code** (sur un ordinateur de votre réseau) :
   `claude mcp add --transport http recetteur http://homeassistant.local:8100/mcp --header "Authorization: Bearer VOTRE_JETON"`
 - **claude.ai, application mobile, Claude Desktop** : les connecteurs personnalisés sont appelés **depuis le cloud d'Anthropic**
-  (pas depuis votre téléphone) : l'adresse doit donc être **publique et en HTTPS**. Un `homeassistant.local` ne convient pas. Il faut
-  publier le port 8100 derrière un tunnel ou un reverse proxy HTTPS (Cloudflare Tunnel, Tailscale Funnel, Nginx Proxy Manager…), puis
-  ajouter un connecteur personnalisé vers `https://votre-adresse/mcp`. D'après la documentation de Claude, un jeton fixe se
+  (pas depuis votre téléphone) : l'adresse doit donc être **publique et en HTTPS**. Un `homeassistant.local` ne convient pas, et
+  l'ingress de Home Assistant non plus (il exige une session de navigateur). Deux solutions :
+  1. **Avec Nabu Casa, sans ouvrir de port** : l'intégration *Recetteur MCP*, voir la section suivante.
+  2. **Un tunnel ou un reverse proxy HTTPS** vers le port 8100 (Cloudflare Tunnel, Tailscale Funnel, Nginx Proxy Manager…).
+  Dans les deux cas, ajoutez un connecteur personnalisé vers l'adresse obtenue ; d'après la documentation de Claude, un jeton fixe se
   transmet comme **en-tête de requête** (`Authorization: Bearer VOTRE_JETON`, sans connexion OAuth). Une fois configuré sur le
   web, le connecteur est utilisable aussi depuis l'application mobile.
+
+### Accès distant par Nabu Casa : l'intégration « Recetteur MCP »
+
+L'adresse `https://….ui.nabu.casa` ne relaie que Home Assistant (port 8123), pas les ports des apps. Mais Home Assistant sait
+recevoir des **webhooks** sur cette même adresse : `https://….ui.nabu.casa/api/webhook/<secret>`. L'intégration *Recetteur MCP*
+(dossier `custom_components/recetteur_mcp` du dépôt) y branche un relais vers le serveur MCP de l'app, joint **par le réseau interne**
+de Home Assistant : le port 8100 n'a donc **pas besoin d'être publié** (laissez-le désactivé dans l'onglet Réseau).
+
+1. **Installer l'intégration** : dans HACS, *Dépôts personnalisés* → `https://github.com/jogaulupeau/recetteur` (type *Intégration*),
+   télécharger « Recetteur MCP » ; ou copier `custom_components/recetteur_mcp` dans `/config/custom_components/`. Redémarrer Home Assistant.
+2. L'option `mcp_token` doit être renseignée dans l'app (sans jeton, le serveur MCP est désactivé).
+3. *Paramètres → Appareils et services → Ajouter une intégration → Recetteur MCP*. Saisissez l'adresse **interne** du serveur :
+   `http://<nom d'hôte de l'app>:8100/mcp`. Le nom d'hôte est affiché sur la page *Informations* de l'app (du type `xxxxxxxx-recetteur`).
+   L'assistant vérifie que le serveur répond, puis affiche l'**URL à donner à Claude**.
+4. Dans Claude : connecteur personnalisé vers cette URL, avec l'en-tête `Authorization: Bearer VOTRE_JETON`.
+
+Sécurité : il faut **deux secrets** pour utiliser le MCP, l'identifiant (aléatoire, 64 caractères) dans l'URL du webhook, et le jeton, que le
+serveur MCP vérifie lui-même (le relais ne le contourne pas). Le relais ne transmet que quelques en-têtes (ni cookies ni en-têtes
+arbitraires), refuse les requêtes de navigateur (`Origin`), n'accepte que `POST`, limite la taille à 4 Mo, et ne révèle aucune adresse
+interne en cas de panne. Ne partagez pas l'URL. Pour supprimer l'accès distant : supprimez l'intégration (le webhook disparaît).
+*Limite connue* : tous les accès passent par Home Assistant, donc le blocage d'adresse du serveur MCP (10 jetons faux en 1 minute)
+s'applique à l'ensemble des clients distants ; il est sans effet sur l'accès local direct.
+
 
 **Sécurité** : c'est le seul accès à l'app qui ne passe pas par l'ingress de Home Assistant, donc **le jeton est la seule
 barrière**. Il est exigé à chaque requête (comparaison en temps constant), l'en-tête `Origin` est refusé (protection des
