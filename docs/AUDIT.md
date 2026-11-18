@@ -35,6 +35,23 @@ dépôt, jeton Supervisor jamais renvoyé ni journalisé) ; envois de fichiers (
   Internet sans reverse proxy authentifié (`HOST` et `RECETTEUR_ALLOWED_HOSTS`).
 - Les écritures sont synchrones : une erreur disque (plein) fait échouer la requête (500 générique) après modification en mémoire.
 
+## Serveur MCP (ajouté en 0.4.0)
+
+Modèle de menace : c'est le seul accès qui ne passe pas par l'ingress, donc le jeton est la seule barrière.
+
+| Risque | Parade (testée dans `test/mcp.test.js`) |
+|---|---|
+| Accès sans jeton / jeton deviné | Bearer obligatoire (minimum 24 caractères, sinon MCP désactivé), comparaison en temps constant, blocage 1 min après 10 échecs, 300 requêtes/min |
+| Page web hostile → serveur local (DNS rebinding) | Tout en-tête `Origin` refusé (exigence de la spécification MCP) |
+| Accès aux routes de l'app par ce port | Une seule URL (`/mcp`), aucune route de l'API ni fichier statique |
+| Un outil abuse de l'app | Les outils passent par `dispatch` : mêmes validations et mêmes limites (300 ingrédients, 500 recettes…) que l'API |
+| Action destructrice par erreur | `supprimer_recette` exige `confirmer=true` ; annotations `destructiveHint` ; mode `mcp_lecture_seule` qui retire tous les outils d'écriture |
+| Arguments piégés (`__proto__`, types faux) | Validation de schéma stricte (paramètres inconnus refusés), `Object.hasOwn` pour les identifiants |
+| Fuite par les erreurs | Erreur interne = message générique ; le jeton n'est jamais journalisé |
+| Corps énorme / lent | 4 Mo max, délais d'en-têtes et de requête |
+
+Interopérabilité vérifiée avec le client officiel `@modelcontextprotocol/sdk` 1.32.2 (connexion, 17 outils, ressource, appels).
+
 ## Performance (600 recettes, Chromium)
 
 | Mesure | Avant | Après |

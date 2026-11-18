@@ -7,6 +7,7 @@ import { expectedFiles, TARGET } from '../scripts/package-addon.js';
 import { expected as skillExpected, SKILL } from '../scripts/sync-skill.js';
 import { buildZip, ZIP_PATH } from '../scripts/zip-skill.js';
 import { validateBundle } from '../shared/recipe.js';
+import { buildTools } from '../server/mcp.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -60,12 +61,24 @@ test('skill : en-tête conforme aux limites de claude.ai (name ≤ 64, descripti
   assert.match(md, /^---\nname: .+\ndescription: .+\n---\n/);
 });
 
+test('chaque outil MCP est documenté dans DOCS.md', () => {
+  const docs = fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8');
+  const names = buildTools({ dispatch: async () => ({ status: 200, body: {} }), stores: { recettes: { data: { recettes: {} } } }, cfg: {} }).map((t) => t.name);
+  assert.equal(names.length, 17);
+  for (const n of names) assert.ok(docs.includes(`\`${n}\``), `${n} absent de DOCS.md`);
+  assert.match(docs, /17 outils/);
+});
+
 test('config de l’app Home Assistant cohérente', () => {
   const cfg = fs.readFileSync(path.join(ROOT, 'addon', 'config.yaml'), 'utf8');
   assert.match(cfg, /ingress: true/);
   assert.match(cfg, /ingress_port: 8099/);
   assert.match(cfg, /homeassistant_api: true/);
   assert.match(cfg, /ingress_only: true/);
+  assert.match(cfg, /mcp_token: ""/);
+  assert.match(cfg, /mcp_token: password/);
+  assert.match(cfg, /8100\/tcp: null/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /RECETTEUR_MCP_PORT=8100/);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /RECETTEUR_ALLOWED_PEERS=172\.30\.32\.2/);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /PORT=8099/);
   assert.equal(fs.statSync(path.join(ROOT, 'addon', 'run.sh')).mode & 0o100, 0o100, 'run.sh exécutable');

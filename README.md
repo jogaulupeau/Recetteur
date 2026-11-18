@@ -50,6 +50,13 @@ Variables : `PORT` (8099), `HOST` (127.0.0.1 ; l'app Home Assistant utilise 0.0.
 (active les appels à Home Assistant : courses → liste todo, alerte des minuteurs → enceinte), `HA_API_BASE` (simuler
 Home Assistant en développement).
 
+## MCP : piloter Recetteur depuis Claude
+
+Serveur MCP intégré (HTTP « streamable », `server/mcp.js`, 17 outils + ressource `recetteur://format`), sur un port dédié protégé par jeton :
+créer des recettes, lire avec quantités ajustées, planifier le menu, courses, minuteurs. Activation, connexion (Claude Code, claude.ai) et
+sécurité : [addon/DOCS.md](addon/DOCS.md). En local : `RECETTEUR_MCP_TOKEN=$(openssl rand -hex 24) npm start`
+(port 8100 ; `RECETTEUR_MCP_PORT`, `RECETTEUR_MCP_READONLY=1`).
+
 ## Sécurité et performance
 
 Voir [docs/AUDIT.md](docs/AUDIT.md) : failles trouvées (reproduites, corrigées, testées) et mesures avant/après. Pour qui appelle l'API

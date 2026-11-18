@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TARGET = path.join(ROOT, 'addon', 'app');
 export const TO_COPY = ['server', 'shared', 'public', 'examples'];
+// Fichiers isolés : la référence du format des recettes, servie par le serveur MCP (ressource recetteur://format).
+export const EXTRA_FILES = ['skill/recettes-recetteur/references/format.md'];
 const FORBIDDEN = ['.tmp', '.bak', '.corrompu', 'node_modules', '.DS_Store', 'options.json'];
 const forbidden = (name) => FORBIDDEN.some((m) => name.includes(m));
 
@@ -25,6 +27,7 @@ function walk(dir, base = dir) {
 export function expectedFiles() {
   const files = new Map();
   for (const name of TO_COPY) for (const rel of walk(path.join(ROOT, name))) files.set(path.join(name, rel), path.join(ROOT, name, rel));
+  for (const rel of EXTRA_FILES) files.set(rel, path.join(ROOT, rel));
   return files;
 }
 

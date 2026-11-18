@@ -14,5 +14,8 @@ if bashio::config.true 'ingress_only'; then
     export RECETTEUR_ALLOWED_PEERS=172.30.32.2
 fi
 
+export RECETTEUR_VERSION="$(bashio::addon.version)"
+export RECETTEUR_MCP_PORT=8100
+
 bashio::log.info "Recetteur demarre sur le port 8099 (ingress)."
 exec node /opt/recetteur/server/index.js

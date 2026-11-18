@@ -451,6 +451,36 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     return Buffer.concat(chunks);
   }
 
+  /**
+   * Exécute une route « en processus », sans HTTP : mêmes validations, mêmes règles, mêmes erreurs que l'API.
+   * Sert au serveur MCP (server/mcp.js), pour qu'une recette créée par Claude passe exactement par le même chemin que
+   * celle collée dans l'interface. Retourne toujours { status, body }.
+   */
+  async function dispatch(method, url, body) {
+    try {
+      const u = new URL(url, 'http://x');
+      const pathname = decodeURIComponent(u.pathname);
+      let matched = false;
+      for (const r of routes) {
+        if (r.raw) continue; // pas d'envoi binaire par cette voie
+        const m = pathname.match(r.re);
+        if (!m) continue;
+        matched = true;
+        if (r.method !== method) continue;
+        const params = Object.fromEntries(r.keys.map((k, i) => [k, m[i + 1]]));
+        const payload = method === 'GET' || method === 'DELETE' ? undefined : structuredClone(body ?? {});
+        const out = await r.handler({ params, query: u.searchParams, body: payload });
+        if (out?.[FILE]) return { status: 200, body: null };
+        return out?.[CREATED] ? { status: 201, body: out.body } : { status: 200, body: out };
+      }
+      return { status: matched ? 405 : 404, body: { erreur: matched ? 'Méthode non autorisée.' : 'Route inconnue.' } };
+    } catch (e) {
+      const intentional = e instanceof HttpError || (Number.isInteger(e?.status) && e.status < 500);
+      if (!intentional) log.error(e?.stack || e);
+      return { status: intentional ? e.status : 500, body: { erreur: intentional ? e.message : 'Erreur interne du serveur.', ...(intentional ? (e.details ?? {}) : {}) } };
+    }
+  }
+
   const wantsGzip = (req) => /\bgzip\b/.test(req.headers['accept-encoding'] ?? '');
 
   /** Réponse JSON, compressée si le client le accepte et que la charge le justifie (l'API de 600 recettes : 865 Ko → 55 Ko). */
@@ -571,5 +601,5 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
   server.requestTimeout = 120_000;
 
   server.on('close', () => timers.close());
-  return { server, stores: { recettes, menu, etat }, config: cfg, timers };
+  return { server, stores: { recettes, menu, etat }, config: cfg, timers, dispatch };
 }

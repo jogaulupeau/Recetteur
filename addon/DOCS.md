@@ -28,6 +28,8 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 | `alerte_media_player` | Lecteur multimédia qui sonne à la fin d'un minuteur (`media_player.cuisine`, une enceinte Sonos, Google Nest…). Vide = pas d'alerte sur enceinte. |
 | `alerte_voix` | Entité de synthèse vocale (`tts.home_assistant_cloud`, `tts.piper`…) : le lecteur annonce « Minuteur terminé : cuisson des pâtes ». |
 | `alerte_son` | À la place de la voix : un son à jouer (`media-source://media_source/local/ding.mp3` ou une URL). Si `alerte_voix` est aussi renseignée, la voix est prioritaire. |
+| `mcp_token` | Active le **serveur MCP** (voir ci-dessous) : jeton d'accès de 24 caractères minimum. Vide = MCP désactivé. |
+| `mcp_lecture_seule` | Avec le MCP : n'expose que les outils de lecture (rien ne peut être créé, modifié ni supprimé). |
 | `ingress_only` | Activée par défaut : l'app n'accepte que les connexions venant de l'ingress de Home Assistant (adresse 172.30.32.2), jamais d'un autre add-on ni du réseau. Si l'interface ne s'ouvre plus après une mise à jour de Home Assistant, décochez-la. |
 | `log_level` | Niveau de détail des journaux. |
 
@@ -63,6 +65,48 @@ peut être ignorée, remplacée ou copiée.
 - **Cuisiner** : une étape à la fois en grand, mise en place cochable, minuteurs
   multiples (sonnerie + vibration), écran maintenu allumé, flèches du clavier ou
   glissement du doigt pour avancer.
+
+## Piloter Recetteur depuis Claude (MCP)
+
+Le serveur **MCP** intégré permet à Claude de travailler directement dans votre carnet, sans copier-coller :
+« ajoute cette recette », « qu'est-ce que je cuisine ce soir avec des courgettes ? », « planifie la semaine pour 4 personnes
+et donne-moi la liste de courses », « mets un minuteur de 12 minutes pour les pâtes ». Chaque action passe par les mêmes
+validations et les mêmes limites que l'interface.
+
+| Outil | Rôle |
+| --- | --- |
+| `rechercher_recettes`, `lire_recette`, `proposer_recettes` | Chercher, lire (quantités ajustées au nombre de personnes), suggérer |
+| `ajouter_recettes`, `modifier_recette` | Créer (avec aperçu et erreurs détaillées) ou modifier des recettes |
+| `modifier_suivi_recette`, `marquer_cuisinee`, `supprimer_recette` | Favori, note, historique ; suppression (confirmation obligatoire) |
+| `voir_menu`, `planifier_repas`, `remplir_menu`, `retirer_repas` | Menu de la semaine (`remplir_menu` propose d'abord, n'enregistre qu'avec `appliquer=true`) |
+| `liste_de_courses`, `envoyer_courses_vers_home_assistant` | Courses de la semaine, envoi vers la liste « todo » |
+| `lancer_minuteur`, `lister_minuteurs`, `arreter_minuteur` | Minuteurs (avec alerte sur l'enceinte) |
+
+La ressource `recetteur://format` donne à Claude la référence du format des recettes : le skill n'est pas nécessaire pour créer
+une recette par ce canal.
+
+**Activer** (3 étapes)
+1. Générez un jeton : `openssl rand -hex 24` (ou votre gestionnaire de mots de passe) et saisissez-le dans l'option `mcp_token`.
+2. Onglet **Réseau** de l'app : donnez un numéro au port `8100/tcp` (par exemple 8100). Sans cela, le serveur n'est pas joignable
+   depuis votre réseau.
+3. Redémarrez l'app. Le journal affiche « MCP : … 17 outils ».
+
+**Se connecter**
+- **Claude Code** (sur un ordinateur de votre réseau) :
+  `claude mcp add --transport http recetteur http://homeassistant.local:8100/mcp --header "Authorization: Bearer VOTRE_JETON"`
+- **claude.ai, application mobile, Claude Desktop** : les connecteurs personnalisés sont appelés **depuis le cloud d'Anthropic**
+  (pas depuis votre téléphone) : l'adresse doit donc être **publique et en HTTPS**. Un `homeassistant.local` ne convient pas. Il faut
+  publier le port 8100 derrière un tunnel ou un reverse proxy HTTPS (Cloudflare Tunnel, Tailscale Funnel, Nginx Proxy Manager…), puis
+  ajouter un connecteur personnalisé vers `https://votre-adresse/mcp`. D'après la documentation de Claude, un jeton fixe se
+  transmet comme **en-tête de requête** (`Authorization: Bearer VOTRE_JETON`, sans connexion OAuth). Une fois configuré sur le
+  web, le connecteur est utilisable aussi depuis l'application mobile.
+
+**Sécurité** : c'est le seul accès à l'app qui ne passe pas par l'ingress de Home Assistant, donc **le jeton est la seule
+barrière**. Il est exigé à chaque requête (comparaison en temps constant), l'en-tête `Origin` est refusé (protection des
+navigateurs), l'adresse est bloquée une minute après 10 jetons faux, le débit est limité, et aucune route de l'app n'est exposée par
+ce port. Ne publiez jamais le port sans HTTPS (le jeton circule en clair sinon). En cas de doute, activez `mcp_lecture_seule`, et
+changez le jeton si vous pensez qu'il a fuité (redémarrage de l'app). Le MCP en lecture seule ne permet de rien modifier, mais
+expose bien le contenu de vos recettes, de votre menu et de vos courses.
 
 ## Photos
 

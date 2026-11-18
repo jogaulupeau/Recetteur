@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- **Serveur MCP** : Claude peut créer des recettes, les lire (quantités ajustées), planifier le menu, calculer les courses et lancer des
+  minuteurs directement dans Recetteur. 17 outils, ressource `recetteur://format`, port dédié `8100/tcp` protégé par un jeton
+  (options `mcp_token` et `mcp_lecture_seule`). Désactivé tant qu'aucun jeton n'est défini.
+
 ## 0.3.1 — audit de sécurité et de performance
 
 Sécurité
