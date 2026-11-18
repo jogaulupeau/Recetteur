@@ -4,6 +4,7 @@
 import crypto from 'node:crypto';
 
 const MAX_SECONDES = 24 * 3600;
+const MAX_MINUTEURS = 50;
 const GARDE_SONNERIE_MS = 30 * 60 * 1000; // une sonnerie non acquittée disparaît après 30 min
 const RATTRAPAGE_MS = 5 * 60 * 1000; // au redémarrage, on sonne encore un minuteur échu depuis moins de 5 min
 
@@ -19,6 +20,15 @@ export function createTimers({ store, titreRecette, ha, log, now = Date.now }) {
   const handles = new Map();
   const all = () => store.data.minuteurs;
   const find = (id) => all().find((t) => t.id === id);
+
+  // Appelée depuis des minuteries : une erreur disque (plein, droits) est journalisée, jamais propagée.
+  function safeSave() {
+    try {
+      store.save();
+    } catch (e) {
+      log.error(`Écriture des minuteurs impossible : ${e.message}`);
+    }
+  }
 
   function arm(t) {
     clearTimeout(handles.get(t.id));
@@ -39,7 +49,7 @@ export function createTimers({ store, titreRecette, ha, log, now = Date.now }) {
     t.etat = 'sonne';
     t.fin = Math.min(t.fin, now());
     t.sonne_a = now();
-    store.save();
+    safeSave();
     log.info(`Minuteur terminé : ${t.libelle}`);
     if (t.alerte && alert && ha.alertMode()) {
       try {
@@ -48,7 +58,7 @@ export function createTimers({ store, titreRecette, ha, log, now = Date.now }) {
         t.alerte_erreur = e.message;
         log.error(`Alerte du minuteur « ${t.libelle} » : ${e.message}`);
       }
-      store.save();
+      safeSave();
     }
   }
 
@@ -89,6 +99,12 @@ export function createTimers({ store, titreRecette, ha, log, now = Date.now }) {
 
     create(body) {
       const secondes = check(body);
+      const cle0 = body.cle ? String(body.cle).slice(0, 120) : null;
+      if (all().filter((x) => x.cle !== cle0 || !cle0).length >= MAX_MINUTEURS) {
+        const e = new Error(`Trop de minuteurs en cours (${MAX_MINUTEURS} au maximum).`);
+        e.status = 400;
+        throw e;
+      }
       const recipeId = body.recipeId ? String(body.recipeId) : null;
       const etape = Number.isInteger(body.etape) ? body.etape : null;
       const titre = recipeId ? titreRecette(recipeId) : undefined;

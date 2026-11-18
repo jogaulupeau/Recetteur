@@ -19,7 +19,8 @@ export function photoUrl(e, { thumb = false } = {}) {
  * sinon l'assiette illustrée. Si l'image ne se charge pas, on retombe sur l'illustration.
  */
 export function visual(e, { className = '', fit, thumb = true } = {}) {
-  const src = photoUrl(e, { thumb }) ?? (e.recette.image || null);
+  // `image` : seules les adresses http(s) sont affichées (le serveur le garantit aussi, mais d'anciennes données ont pu être enregistrées avant).
+  const src = photoUrl(e, { thumb }) ?? (/^https?:\/\//i.test(e.recette.image ?? '') ? e.recette.image : null);
   if (!src) return plate(e.recette, { className, fit });
   const img = h('img', { class: `${className} photo`.trim(), src, alt: '', loading: 'lazy', decoding: 'async', onerror: () => img.replaceWith(plate(e.recette, { className, fit })) });
   return img;

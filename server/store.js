@@ -5,9 +5,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export class JsonStore {
-  constructor(file, defaults, log = console) {
+  /**
+   * @param {object} [o]
+   * @param {boolean} [o.pretty=true]    JSON indenté (lisible) ou compact (-50 % pour les gros fichiers)
+   * @param {number} [o.bakEveryMs=0]    ne rafraîchit la copie .bak que si elle a plus de N ms (évite de recopier un gros
+   *                                     fichier à chaque clic ; la copie reste un point de retour utile)
+   */
+  constructor(file, defaults, log = console, { pretty = true, bakEveryMs = 0 } = {}) {
     this.file = file;
     this.log = log;
+    this.pretty = pretty;
+    this.bakEveryMs = bakEveryMs;
     this.data = this.#load(defaults);
   }
 
@@ -27,8 +35,14 @@ export class JsonStore {
 
   save() {
     const tmp = `${this.file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2));
-    if (fs.existsSync(this.file)) fs.copyFileSync(this.file, `${this.file}.bak`);
+    fs.writeFileSync(tmp, JSON.stringify(this.data, null, this.pretty ? 2 : 0));
+    if (fs.existsSync(this.file)) {
+      const bak = `${this.file}.bak`;
+      let age = Infinity;
+      try { age = Date.now() - fs.statSync(bak).mtimeMs; } catch { /* pas encore de copie */ }
+      // `<= 0` : sans limitation on copie toujours (l'âge peut être légèrement négatif si l'horodatage tombe dans la même milliseconde)
+      if (this.bakEveryMs <= 0 || age >= this.bakEveryMs) fs.copyFileSync(this.file, bak);
+    }
     fs.renameSync(tmp, this.file);
   }
 

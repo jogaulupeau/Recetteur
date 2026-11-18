@@ -1,5 +1,7 @@
 // API + fichiers statiques. Aucune dépendance : node:http uniquement.
 import http from 'node:http';
+import zlib from 'node:zlib';
+import { promisify } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,8 +57,24 @@ const MIME = {
  * @param {string} [o.haBase]
  * @param {typeof fetch} [o.fetch]
  */
-export function createApp({ dataDir, options = {}, log = console, supervisorToken = null, haBase = 'http://supervisor/core/api', fetch: doFetch = globalThis.fetch } = {}) {
-  const recettes = new JsonStore(path.join(dataDir, 'recettes.json'), { version: 1, recettes: {} }, log);
+const gzip = promisify(zlib.gzip);
+const COMPRESSIBLE = /^(text\/|application\/(json|javascript|manifest\+json)|image\/svg)/;
+
+// En-têtes de sécurité de toutes les réponses. La CSP interdit tout script ou ressource venant d'ailleurs que de l'app
+// elle-même (les images http(s) d'une recette restent permises : `image` est un champ de la recette ; `blob:` sert au
+// décodage d'une photo choisie par l'utilisateur, avant son redimensionnement).
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'";
+const SECURITY_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': CSP };
+// Une photo n'est jamais un document : même une image piégée ne pourrait rien exécuter.
+const FILE_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cross-Origin-Resource-Policy': 'same-origin' };
+
+/**
+ * @param {string[]|null} [o.allowedPeers]  adresses IP autorisées à se connecter (l'ingress de Home Assistant : 172.30.32.2)
+ * @param {string[]|null} [o.allowedHosts]  noms d'hôte acceptés dans l'en-tête Host (protège du « DNS rebinding » en local)
+ */
+export function createApp({ dataDir, options = {}, log = console, supervisorToken = null, haBase = 'http://supervisor/core/api', fetch: doFetch = globalThis.fetch, allowedPeers = null, allowedHosts = null } = {}) {
+  // Le plus gros fichier : JSON compact et copie .bak au plus toutes les 10 min (sinon 2 × 1,7 Mo réécrits à chaque clic sur un cœur).
+  const recettes = new JsonStore(path.join(dataDir, 'recettes.json'), { version: 1, recettes: {} }, log, { pretty: false, bakEveryMs: 10 * 60 * 1000 });
   const menu = new JsonStore(path.join(dataDir, 'menu.json'), { version: 1, suivant: 1, repas: [] }, log);
   const etat = new JsonStore(path.join(dataDir, 'etat.json'), { version: 1, courses: {}, stock: [], minuteurs: [] }, log);
   const cfg = {
@@ -72,7 +90,8 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
 
   const now = () => new Date().toISOString();
   const entry = (id) => {
-    const e = recettes.data.recettes[id];
+    // Object.hasOwn : « __proto__ » ou « constructor » ne doivent pas désigner l'objet prototype (pollution).
+    const e = Object.hasOwn(recettes.data.recettes, id) ? recettes.data.recettes[id] : undefined;
     if (!e) throw notFound('Recette introuvable.');
     return e;
   };
@@ -81,7 +100,7 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
   function uniqueId(titre) {
     const base = slugify(titre);
     let id = base, n = 2;
-    while (recettes.data.recettes[id]) id = `${base}-${n++}`;
+    while (Object.hasOwn(recettes.data.recettes, id)) id = `${base}-${n++}`;
     return id;
   }
   const newEntry = (id, recette) => ({
@@ -171,8 +190,9 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     const target = photoFile(e.id, kind, img.ext);
     // Remplace l'ancienne version (l'extension peut différer), écriture atomique.
     for (const old of fs.readdirSync(photosDir)) if (old.startsWith(`${e.id}.${kind}.`)) fs.rmSync(path.join(photosDir, old), { force: true });
-    fs.writeFileSync(`${target}.tmp`, body);
-    fs.renameSync(`${target}.tmp`, target);
+    const tmp = `${target}.${process.pid}.${Date.now()}.tmp`; // nom unique : deux envois simultanés ne se marchent pas dessus
+    fs.writeFileSync(tmp, body);
+    fs.renameSync(tmp, target);
     recettes.update(() => {
       e.photo = { ...(e.photo ?? {}), v: Date.now(), [kind]: img.ext };
       e.modifie_le = now();
@@ -226,7 +246,8 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     const results = validateBundle(body).map((r) => {
       const out = { index: r.index, titre: r.recipe?.titre ?? null, erreurs: r.errors, avertissements: r.warnings };
       if (!r.recipe) return { ...out, statut: 'invalide' };
-      const existing = recettes.data.recettes[slugify(r.recipe.titre)];
+      const slug = slugify(r.recipe.titre);
+      const existing = Object.hasOwn(recettes.data.recettes, slug) ? recettes.data.recettes[slug] : undefined;
       if (existing) out.existant = existing.id;
       const statut = !existing ? 'nouveau' : mode === 'remplacer' ? 'remplace' : mode === 'dupliquer' ? 'nouveau' : 'ignore';
       return { ...out, statut, _recipe: r.recipe };
@@ -281,6 +302,7 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     return { date: m.date, slot: m.slot, recipeId: m.recipeId, servings };
   }
   const addMeal = (d, m) => {
+    if (d.repas.length >= 5000) throw bad('Trop de repas planifiés (5000 au maximum) : videz d’anciennes semaines.');
     const clean = checkMeal(m);
     const pos = d.repas.filter((r) => r.date === clean.date && r.slot === clean.slot).length;
     const rec = { id: d.suivant++, ...clean, position: pos, fait: false };
@@ -360,7 +382,7 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
   // --- Home Assistant : ajout à une liste « todo » (par défaut todo.shopping_list)
   route('POST', '/api/courses-ha', async ({ body }) => {
     if (!supervisorToken) throw new HttpError(501, 'Disponible uniquement lorsque l’app tourne dans Home Assistant.');
-    const items = (Array.isArray(body?.items) ? body.items : []).map((s) => String(s).trim()).filter(Boolean).slice(0, 300);
+    const items = (Array.isArray(body?.items) ? body.items.slice(0, 300) : []).map((s) => String(s).trim().slice(0, 200)).filter(Boolean);
     if (!items.length) throw bad('Aucun article à envoyer.');
     let ok = 0;
     const echecs = [];
@@ -396,6 +418,9 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
   // ------------------------------------------------------------------ HTTP
   async function readBody(req) {
     if (req.method === 'GET' || req.method === 'DELETE') return undefined;
+    // Exiger application/json force le navigateur à une pré-vérification (CORS) pour tout site tiers : un formulaire ou un
+    // fetch « simple » venant d'une autre page ne peut donc pas déclencher d'action (CSRF).
+    if (!/^application\/json\b/i.test(req.headers['content-type'] ?? '')) throw new HttpError(415, 'En-tête « Content-Type: application/json » requis.');
     const chunks = [];
     let size = 0;
     for await (const c of req) {
@@ -404,11 +429,14 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
       chunks.push(c);
     }
     if (!size) return {};
+    let v;
     try {
-      return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      v = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch (e) {
       throw bad(`JSON invalide : ${e.message}`);
     }
+    if (v === null || typeof v !== 'object') throw bad('Le corps doit être un objet ou un tableau JSON.');
+    return v;
   }
 
   async function readRaw(req) {
@@ -423,42 +451,88 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     return Buffer.concat(chunks);
   }
 
-  const send = (res, status, payload, headers = {}) => {
-    const body = JSON.stringify(payload);
-    res.writeHead(status, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store', ...headers });
-    res.end(body);
-  };
+  const wantsGzip = (req) => /\bgzip\b/.test(req.headers['accept-encoding'] ?? '');
+
+  /** Réponse JSON, compressée si le client le accepte et que la charge le justifie (l'API de 600 recettes : 865 Ko → 55 Ko). */
+  async function send(req, res, status, payload, headers = {}) {
+    let body = Buffer.from(JSON.stringify(payload));
+    const h = { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store', Vary: 'Accept-Encoding', ...SECURITY_HEADERS, 'Cross-Origin-Resource-Policy': 'same-origin', ...headers };
+    if (body.length > 1024 && wantsGzip(req)) {
+      body = await gzip(body);
+      h['Content-Encoding'] = 'gzip';
+    }
+    h['Content-Length'] = body.length;
+    res.writeHead(status, h);
+    res.end(req.method === 'HEAD' ? undefined : body);
+  }
 
   function serveStatic(req, res, pathname) {
     let base = PUBLIC, rel = pathname;
     if (pathname.startsWith('/shared/')) (base = SHARED), (rel = pathname.slice('/shared'.length));
     if (rel === '/' || rel === '') rel = '/index.html';
     const file = path.normalize(path.join(base, rel));
-    if (!file.startsWith(base + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    if (rel.includes('\0') || !file.startsWith(base + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS });
       return res.end('Introuvable');
     }
-    return sendFile(req, res, file, MIME[path.extname(file)] ?? 'application/octet-stream', 'no-cache');
+    // Les polices et icônes changent rarement : une semaine de cache ; le code (JS/CSS/HTML) se revalide à chaque ouverture (ETag).
+    const stable = /^\/(fonts|icons)\//.test(rel);
+    return sendFile(req, res, file, MIME[path.extname(file)] ?? 'application/octet-stream', stable ? 'public, max-age=604800' : 'no-cache', SECURITY_HEADERS);
   }
 
-  /** Envoie un fichier avec ETag (304 si inchangé). */
-  function sendFile(req, res, file, type, cache) {
+  const gzFiles = new Map(); // fichier → { key, buf } : on ne compresse chaque fichier statique qu'une fois
+  /** Envoie un fichier avec ETag (304 si inchangé) et compression gzip des textes. */
+  function sendFile(req, res, file, type, cache, extra = FILE_HEADERS) {
     const st = fs.statSync(file);
     const etag = `W/"${st.size}-${Math.round(st.mtimeMs)}"`;
-    const headers = { 'Content-Type': type, ETag: etag, 'Cache-Control': cache };
+    const headers = { 'Content-Type': type, ETag: etag, 'Cache-Control': cache, Vary: 'Accept-Encoding', ...extra };
     if (req.headers['if-none-match'] === etag) {
       res.writeHead(304, headers);
       return res.end();
+    }
+    if (COMPRESSIBLE.test(type) && st.size > 1024 && wantsGzip(req)) {
+      const key = `${st.size}-${st.mtimeMs}`;
+      let hit = gzFiles.get(file);
+      if (hit?.key !== key) gzFiles.set(file, (hit = { key, buf: zlib.gzipSync(fs.readFileSync(file), { level: 9 }) }));
+      res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip', 'Content-Length': hit.buf.length });
+      return res.end(req.method === 'HEAD' ? undefined : hit.buf);
     }
     res.writeHead(200, { ...headers, 'Content-Length': st.size });
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(file).pipe(res);
   }
 
-  const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url, 'http://x');
-    const pathname = decodeURIComponent(url.pathname).replace(/\/{2,}/g, '/');
+  const refused = new Set();
+  /** Filtre d'accès, avant tout routage. Retourne l'erreur à renvoyer, ou null. */
+  function gate(req) {
+    const peer = String(req.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
+    if (allowedPeers && !allowedPeers.has(peer)) {
+      if (!refused.has(peer)) {
+        refused.add(peer);
+        log.error(`Connexion refusée depuis ${peer} : seul l’ingress de Home Assistant (${[...allowedPeers].join(', ')}) est autorisé (option « ingress_only »).`);
+      }
+      return new HttpError(403, 'Accès refusé.');
+    }
+    if (allowedHosts && !allowedHosts.has(String(req.headers.host ?? '').toLowerCase().replace(/:\d+$/, ''))) return new HttpError(403, 'Nom d’hôte non autorisé.');
+    // Une écriture déclenchée depuis une autre page web (CSRF) est refusée : les navigateurs récents annoncent l'origine.
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const site = req.headers['sec-fetch-site'];
+      if (site && site !== 'same-origin' && site !== 'none') return new HttpError(403, 'Requête inter-sites refusée.');
+    }
+    return null;
+  }
+
+  async function handle(req, res) {
     try {
+      const denied = gate(req);
+      if (denied) throw denied;
+      let url, pathname;
+      try {
+        url = new URL(req.url, 'http://x');
+        pathname = decodeURIComponent(url.pathname).replace(/\/{2,}/g, '/'); // URIError sur « %E0%A4%A » : à l'intérieur du try
+      } catch {
+        throw bad('URL invalide.');
+      }
       if (!pathname.startsWith('/api/')) {
         if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'Méthode non autorisée.');
         return serveStatic(req, res, pathname);
@@ -472,15 +546,29 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
         const params = Object.fromEntries(r.keys.map((k, i) => [k, m[i + 1]]));
         const out = await r.handler({ params, query: url.searchParams, body: await (r.raw ? readRaw(req) : readBody(req)) });
         if (out?.[FILE]) return sendFile(req, res, out.file, out.type, out.cache);
-        return out?.[CREATED] ? send(res, 201, out.body) : send(res, 200, out);
+        return out?.[CREATED] ? await send(req, res, 201, out.body) : await send(req, res, 200, out);
       }
       throw matched ? new HttpError(405, 'Méthode non autorisée.') : notFound('Route inconnue.');
     } catch (e) {
-      const status = e.status ?? 500;
-      if (status >= 500 && !(e instanceof HttpError)) log.error(e.stack || e);
-      send(res, status, { erreur: e.message, ...(e.details ?? {}) });
+      // Les erreurs « voulues » (HttpError, ou portant un code < 500) disent ce qui ne va pas ; une erreur inattendue est
+      // journalisée en détail côté serveur et ne révèle rien au client (chemins, messages du moteur…).
+      const intentional = e instanceof HttpError || (Number.isInteger(e?.status) && e.status < 500);
+      if (!intentional) log.error(e?.stack || e);
+      const status = intentional ? e.status : 500;
+      if (res.headersSent) return res.destroy();
+      await send(req, res, status, { erreur: intentional ? e.message : 'Erreur interne du serveur.', ...(intentional ? (e.details ?? {}) : {}) });
     }
+  }
+
+  const server = http.createServer((req, res) => {
+    // Filet de sécurité : aucune requête ne doit jamais faire tomber le processus (Node arrête sur une promesse rejetée).
+    handle(req, res).catch((e) => {
+      log.error(e?.stack || e);
+      try { res.headersSent ? res.destroy() : (res.writeHead(500, SECURITY_HEADERS), res.end()); } catch { /* connexion déjà fermée */ }
+    });
   });
+  server.headersTimeout = 20_000; // anti « slowloris » : un client qui goutte-à-goutte ses en-têtes est coupé
+  server.requestTimeout = 120_000;
 
   server.on('close', () => timers.close());
   return { server, stores: { recettes, menu, etat }, config: cfg, timers };

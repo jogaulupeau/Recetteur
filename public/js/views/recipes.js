@@ -39,6 +39,9 @@ export function render({ root }) {
   const present = Object.entries(TYPES).filter(([k]) => state.recettes.some((e) => e.recette.type === k));
   const tags = tagCounts(state.recettes).slice(0, 14);
 
+  const PAGE = 36;
+  let list = [], shown = PAGE, observer;
+
   function filtered() {
     return searchRecipes(state.recettes, { ...filters, tri: filters.tri || undefined });
   }
@@ -51,10 +54,46 @@ export function render({ root }) {
         update();
       } }, `${t} `, h('small', {}, n))));
     favChip.classList.toggle('on', filters.favoris);
-    const list = filtered();
+    list = filtered();
     root.querySelector('#count').textContent = `${list.length} sur ${state.recettes.length} recette${state.recettes.length > 1 ? 's' : ''}`;
-    fill(results, ...(list.length ? list.map((e) => recipeCard(e)) : [h('div', { class: 'card empty', style: { gridColumn: '1/-1' } }, h('p', { class: 'muted' }, 'Aucune recette ne correspond à ces critères.'),
-      h('button', { class: 'btn', onclick: () => (Object.assign(filters, { q: '', type: '', tags: [], favoris: false, maxTemps: 0 }), (search.value = ''), (maxSel.value = 0), update()) }, 'Réinitialiser les filtres'))]));
+    shown = PAGE;
+    paint();
+  }
+
+  // Rendu progressif : 600 recettes = 52 000 nœuds DOM d'un coup (2,5 s sur un mobile modeste). On en affiche PAGE, la suite
+  // arrive au défilement (ou au bouton). Charger la suite AJOUTE des cartes sans reconstruire celles déjà affichées
+  // (sinon le coût devient quadratique) ; seul un changement de filtre repart de zéro.
+  let rendered = 0, moreEl = null;
+
+  function paint() {
+    observer?.disconnect();
+    moreEl = null;
+    rendered = 0;
+    if (!list.length) {
+      fill(results, h('div', { class: 'card empty', style: { gridColumn: '1/-1' } }, h('p', { class: 'muted' }, 'Aucune recette ne correspond à ces critères.'),
+        h('button', { class: 'btn', onclick: () => (Object.assign(filters, { q: '', type: '', tags: [], favoris: false, maxTemps: 0 }), (search.value = ''), (maxSel.value = 0), update()) }, 'Réinitialiser les filtres')));
+      return;
+    }
+    fill(results);
+    appendCards();
+  }
+
+  function appendCards() {
+    observer?.disconnect();
+    moreEl?.remove();
+    const frag = document.createDocumentFragment();
+    for (const e of list.slice(rendered, shown)) frag.append(recipeCard(e));
+    results.append(frag);
+    rendered = Math.min(shown, list.length);
+    const rest = list.length - rendered;
+    if (rest <= 0) return;
+    moreEl = h('div', { class: 'more', style: { gridColumn: '1 / -1', textAlign: 'center' } },
+      h('button', { class: 'btn', onclick: () => { shown += PAGE; appendCards(); } }, `Afficher plus (${rest} restante${rest > 1 ? 's' : ''})`));
+    results.append(moreEl);
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver((entries) => { if (entries.some((x) => x.isIntersecting)) { shown += PAGE; appendCards(); } }, { rootMargin: '700px' });
+      observer.observe(moreEl);
+    }
   }
 
   function surprise() {
@@ -70,4 +109,5 @@ export function render({ root }) {
     typeBar, tagBar,
     h('div', { class: 'row' }, favChip, maxSel, sortSel)), results);
   update();
+  return () => observer?.disconnect();
 }

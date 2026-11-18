@@ -28,6 +28,7 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 | `alerte_media_player` | Lecteur multimédia qui sonne à la fin d'un minuteur (`media_player.cuisine`, une enceinte Sonos, Google Nest…). Vide = pas d'alerte sur enceinte. |
 | `alerte_voix` | Entité de synthèse vocale (`tts.home_assistant_cloud`, `tts.piper`…) : le lecteur annonce « Minuteur terminé : cuisson des pâtes ». |
 | `alerte_son` | À la place de la voix : un son à jouer (`media-source://media_source/local/ding.mp3` ou une URL). Si `alerte_voix` est aussi renseignée, la voix est prioritaire. |
+| `ingress_only` | Activée par défaut : l'app n'accepte que les connexions venant de l'ingress de Home Assistant (adresse 172.30.32.2), jamais d'un autre add-on ni du réseau. Si l'interface ne s'ouvre plus après une mise à jour de Home Assistant, décochez-la. |
 | `log_level` | Niveau de détail des journaux. |
 
 ## Ajouter des recettes (avec Claude)

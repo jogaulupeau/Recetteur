@@ -50,6 +50,12 @@ Variables : `PORT` (8099), `HOST` (127.0.0.1 ; l'app Home Assistant utilise 0.0.
 (active les appels à Home Assistant : courses → liste todo, alerte des minuteurs → enceinte), `HA_API_BASE` (simuler
 Home Assistant en développement).
 
+## Sécurité et performance
+
+Voir [docs/AUDIT.md](docs/AUDIT.md) : failles trouvées (reproduites, corrigées, testées) et mesures avant/après. Pour qui appelle l'API
+à la main : les écritures (`POST`/`PUT`/`PATCH`) exigent l'en-tête `Content-Type: application/json` (protection CSRF), et un corps
+doit être un objet ou un tableau JSON.
+
 ## Le skill Claude
 
 `skill/recettes-recetteur/` est un skill complet (instructions, référence du format, exemple, validateur Node

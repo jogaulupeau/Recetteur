@@ -36,6 +36,10 @@ for (const [k, v] of Object.entries(RAYONS)) {
   RAYON_LOOKUP.set(normalize(v), k);
 }
 
+// Limites : une recette reste un document de quelques Ko. Elles protègent le serveur (CPU, disque) d'un import
+// démesuré ou malveillant, et rendent la validation linéaire.
+export const LIMITS = { ingredients: 300, etapes: 200, tags: 40, materiel: 100, recettes: 500, titre: 200, description: 2000, texte: 5000, notes: 10000, court: 300, url: 2000 };
+
 export const STEP_TOKEN = /\{\{\s*([a-z0-9][a-z0-9_-]*)\s*\}\}/gi;
 
 /**
@@ -56,10 +60,11 @@ export function validateRecipe(input) {
   }
 
   // --- Identité ---
-  r.titre = str(input.titre);
+  const cap = (path, value, max) => (String(value).length > max ? (err(path, `trop long (${max} caractères max)`), '') : value);
+  r.titre = cap('titre', str(input.titre), LIMITS.titre);
   if (!r.titre) err('titre', 'obligatoire');
   else if (r.titre.length > 200) err('titre', 'trop long (200 caractères max)');
-  r.description = str(input.description);
+  r.description = cap('description', str(input.description), LIMITS.description);
 
   const rawType = str(input.type);
   if (!rawType) r.type = 'plat';
@@ -89,14 +94,20 @@ export function validateRecipe(input) {
     else warn('difficulte', `« ${input.difficulte} » ignorée (valeurs : ${DIFFICULTES.join(', ')})`);
   }
 
-  r.cuisine = str(input.cuisine);
+  r.cuisine = cap('cuisine', str(input.cuisine), 100);
   if (input.tags != null && !Array.isArray(input.tags)) err('tags', 'liste de mots-clés attendue');
-  r.tags = [...new Set((Array.isArray(input.tags) ? input.tags : []).map((t) => str(t).toLowerCase()).filter(Boolean))];
-  r.source = str(input.source);
+  if (Array.isArray(input.tags) && input.tags.length > LIMITS.tags) err('tags', `${LIMITS.tags} mots-clés au maximum`);
+  r.tags = [...new Set((Array.isArray(input.tags) ? input.tags.slice(0, LIMITS.tags) : []).map((t) => str(t).toLowerCase().slice(0, 60)).filter(Boolean))];
+  r.source = cap('source', str(input.source), LIMITS.court);
   r.image = str(input.image);
-  r.conservation = str(input.conservation);
-  r.notes = Array.isArray(input.notes) ? input.notes.map(str).filter(Boolean).join('\n') : str(input.notes);
-  r.materiel = Array.isArray(input.materiel) ? input.materiel.map(str).filter(Boolean) : [];
+  if (r.image && !/^https?:\/\/[^\s]+$/i.test(r.image)) {
+    warn('image', 'seules les adresses http(s) sont acceptées → ignorée');
+    r.image = '';
+  } else if (r.image.length > LIMITS.url) r.image = '';
+  r.conservation = cap('conservation', str(input.conservation), LIMITS.description);
+  r.notes = cap('notes', Array.isArray(input.notes) ? input.notes.slice(0, 100).map(str).filter(Boolean).join('\n') : str(input.notes), LIMITS.notes);
+  if (Array.isArray(input.materiel) && input.materiel.length > LIMITS.materiel) err('materiel', `${LIMITS.materiel} éléments au maximum`);
+  r.materiel = Array.isArray(input.materiel) ? input.materiel.slice(0, LIMITS.materiel).map((m) => str(m).slice(0, 200)).filter(Boolean) : [];
 
   // --- Ingrédients ---
   r.ingredients = [];
@@ -104,11 +115,13 @@ export function validateRecipe(input) {
   if (!Array.isArray(input.ingredients) || input.ingredients.length === 0) {
     err('ingredients', 'liste non vide obligatoire');
   } else {
-    input.ingredients.forEach((raw, i) => {
+    if (input.ingredients.length > LIMITS.ingredients) err('ingredients', `${LIMITS.ingredients} ingrédients au maximum`);
+    const idCounters = new Map();
+    input.ingredients.slice(0, LIMITS.ingredients).forEach((raw, i) => {
       const p = `ingredients[${i}]`;
       if (!isObj(raw)) return err(p, 'objet attendu');
       const ing = {};
-      ing.nom = str(raw.nom);
+      ing.nom = str(raw.nom).slice(0, 200);
       if (!ing.nom) return err(`${p}.nom`, 'obligatoire');
       const label = `${p} (« ${ing.nom} »)`;
 
@@ -118,8 +131,13 @@ export function validateRecipe(input) {
         id = '';
       }
       if (!id) id = slugify(ing.nom).split('-').slice(0, 4).join('-') || `ing-${i + 1}`;
-      let uniq = id, n = 2;
-      while (usedIds.has(uniq)) uniq = `${id}-${n++}`;
+      // Unicité en temps amorti constant (une boucle « tant que pris » serait quadratique sur des ids identiques).
+      let uniq = id;
+      if (usedIds.has(uniq)) {
+        let n = idCounters.get(id) ?? 1;
+        do uniq = `${id}-${++n}`; while (usedIds.has(uniq));
+        idCounters.set(id, n);
+      }
       if (uniq !== id && raw.id) warn(`${label}.id`, `« ${id} » en double → « ${uniq} »`);
       ing.id = uniq;
       usedIds.add(uniq);
@@ -148,8 +166,8 @@ export function validateRecipe(input) {
       } else ing.unite = cu;
       if (ing.quantite == null) ing.unite = '';
 
-      if (raw.note) ing.note = str(raw.note);
-      if (raw.groupe) ing.groupe = str(raw.groupe);
+      if (raw.note) ing.note = str(raw.note).slice(0, LIMITS.court);
+      if (raw.groupe) ing.groupe = str(raw.groupe).slice(0, 100);
 
       const rr = str(raw.rayon);
       if (rr && RAYON_LOOKUP.has(normalize(rr))) ing.rayon = RAYON_LOOKUP.get(normalize(rr));
@@ -172,13 +190,14 @@ export function validateRecipe(input) {
   if (!rawSteps || rawSteps.length === 0) err('etapes', 'liste non vide obligatoire');
   else {
     const byName = new Map(r.ingredients.map((g) => [normalize(g.nom), g.id]));
-    rawSteps.forEach((raw, i) => {
+    if (rawSteps.length > LIMITS.etapes) err('etapes', `${LIMITS.etapes} étapes au maximum`);
+    rawSteps.slice(0, LIMITS.etapes).forEach((raw, i) => {
       const p = `etapes[${i}]`;
       const o = typeof raw === 'string' ? { texte: raw } : raw;
       if (!isObj(o)) return err(p, 'objet ou texte attendu');
-      const step = { texte: str(o.texte) };
+      const step = { texte: cap(`${p}.texte`, str(o.texte), LIMITS.texte) };
       if (!step.texte) return err(`${p}.texte`, 'obligatoire');
-      if (o.titre) step.titre = str(o.titre);
+      if (o.titre) step.titre = str(o.titre).slice(0, 200);
       if (o.duree != null && o.duree !== '') {
         const d = parseNumber(o.duree);
         if (Number.isFinite(d) && d > 0 && d <= 20000) step.duree = Math.round(d);
@@ -204,7 +223,7 @@ export function validateRecipe(input) {
         const key = str(ref).toLowerCase();
         if (usedIds.has(key)) refs.push(key);
         else if (byName.has(normalize(ref))) refs.push(byName.get(normalize(ref)));
-        else err(`${p}.ingredients`, `« ${ref} » ne correspond à aucun ingrédient (ids : ${[...usedIds].join(', ')})`);
+        else err(`${p}.ingredients`, `« ${ref} » ne correspond à aucun ingrédient (ids : ${[...usedIds].slice(0, 20).join(', ')})`);
       }
       for (const m of step.texte.matchAll(STEP_TOKEN)) {
         if (!usedIds.has(m[1].toLowerCase())) err(`${p}.texte`, `{{${m[1]}}} ne correspond à aucun ingrédient`);
@@ -239,6 +258,7 @@ export function validateBundle(input) {
   if (Array.isArray(input)) list = input;
   else if (isObj(input) && Array.isArray(input.recettes)) list = input.recettes;
   else list = [input];
+  if (list.length > LIMITS.recettes) return [{ index: 0, recipe: null, errors: [`Trop de recettes dans un seul import (${LIMITS.recettes} au maximum).`], warnings: [] }];
   return list.map((raw, index) => ({ index, ...validateRecipe(raw) }));
 }
 

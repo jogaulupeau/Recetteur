@@ -65,6 +65,8 @@ test('config de l’app Home Assistant cohérente', () => {
   assert.match(cfg, /ingress: true/);
   assert.match(cfg, /ingress_port: 8099/);
   assert.match(cfg, /homeassistant_api: true/);
+  assert.match(cfg, /ingress_only: true/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /RECETTEUR_ALLOWED_PEERS=172\.30\.32\.2/);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /PORT=8099/);
   assert.equal(fs.statSync(path.join(ROOT, 'addon', 'run.sh')).mode & 0o100, 0o100, 'run.sh exécutable');
 });

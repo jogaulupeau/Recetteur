@@ -114,6 +114,14 @@ export function composition(recette) {
   return { items, r, form: dishForm(recette) };
 }
 
+// Une illustration ne change que si la recette change : on ne la recalcule pas à chaque filtre ou chaque retour sur la liste.
+const SVG_CACHE = new WeakMap();
+const cachedSvg = (recette) => {
+  let svg = SVG_CACHE.get(recette);
+  if (!svg) SVG_CACHE.set(recette, (svg = plateSvg(recette)));
+  return svg;
+};
+
 /** SVG (chaîne) de l'assiette d'une recette. */
 export function plateSvg(recette) {
   const { items, r, form } = composition(recette);
@@ -192,7 +200,7 @@ export function describePlate(recette) {
  */
 export function plate(recette, { className = '', fit } = {}) {
   const el = h('span', { class: `plate ${className}`, 'data-type': recette.type, 'data-tint': tintOf(recette), role: 'img', 'aria-label': describePlate(recette) || undefined });
-  el.innerHTML = plateSvg(recette);
+  el.innerHTML = cachedSvg(recette);
   // Bannière large : assiette entière (« meet »). Pastille ou héros : on zoome sur l'assiette (« slice »).
   const slice = (fit ?? (className.includes('avatar') ? 'slice' : 'meet')) === 'slice';
   el.firstElementChild.setAttribute('preserveAspectRatio', slice ? 'xMidYMid slice' : 'xMidYMid meet');

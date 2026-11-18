@@ -21,10 +21,32 @@ const log = {
   error: (...a) => console.error(stamp(), 'ERREUR', ...a),
 };
 
-const { server, stores } = createApp({ dataDir, options, log, supervisorToken: process.env.SUPERVISOR_TOKEN || null,
+// Qui peut se connecter ?
+//  - dans l'app Home Assistant : uniquement l'ingress du Supervisor (172.30.32.2), jamais un autre add-on ni le réseau
+//    (run.sh renseigne RECETTEUR_ALLOWED_PEERS ; option « ingress_only » pour le désactiver) ;
+//  - lancé en local (127.0.0.1) : on vérifie l'en-tête Host, ce qui empêche une page web hostile de joindre l'app
+//    par « DNS rebinding » (RECETTEUR_ALLOWED_HOSTS pour ajouter un nom, par exemple derrière un reverse proxy).
+const list = (v) => String(v ?? '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+const allowedPeers = list(process.env.RECETTEUR_ALLOWED_PEERS).length ? new Set(list(process.env.RECETTEUR_ALLOWED_PEERS)) : null;
+const loopback = ['127.0.0.1', '::1', 'localhost'].includes(host);
+const allowedHosts = loopback || process.env.RECETTEUR_ALLOWED_HOSTS ? new Set(['localhost', '127.0.0.1', '[::1]', ...list(process.env.RECETTEUR_ALLOWED_HOSTS)]) : null;
+
+const { server, stores } = createApp({ dataDir, options, log, allowedPeers, allowedHosts, supervisorToken: process.env.SUPERVISOR_TOKEN || null,
   // Pour simuler Home Assistant en développement (par défaut : l'API du Supervisor).
   haBase: process.env.HA_API_BASE || undefined });
 server.listen(port, host, () => {
   log.info(`Recetteur : http://${host}:${port}/ — ${Object.keys(stores.recettes.data.recettes).length} recette(s), données dans ${dataDir}`);
 });
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => server.close(() => process.exit(0)));
+
+// Une erreur imprévue (disque plein, bug…) est journalisée sans arrêter l'app : minuteurs et alertes continuent.
+process.on('unhandledRejection', (e) => log.error('Promesse rejetée non gérée :', e?.stack || e));
+process.on('uncaughtException', (e) => log.error('Exception non gérée :', e?.stack || e));
+
+// Arrêt propre : on referme aussi les connexions « keep-alive », sinon server.close() attend leur expiration.
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    server.close(() => process.exit(0));
+    server.closeAllConnections?.();
+    setTimeout(() => process.exit(0), 3000).unref();
+  });
+}

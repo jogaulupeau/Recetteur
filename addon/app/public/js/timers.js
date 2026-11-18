@@ -186,7 +186,8 @@ export function initTimers() {
     }
     if (S.list.length) draw();
   }, 1000);
-  setInterval(refresh, 5000);
+  // Pas d'interrogation du serveur quand l'onglet est caché (batterie) : le retour au premier plan rafraîchit aussitôt.
+  setInterval(() => document.visibilityState === 'visible' && refresh(), 5000);
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refresh());
   refresh();
 }
