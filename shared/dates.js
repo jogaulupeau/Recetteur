@@ -24,10 +24,14 @@ export const weekDays = (monday) => Array.from({ length: 7 }, (_, i) => addDays(
 export function daysBetween(a, b) {
   return Math.round((fromISO(b) - fromISO(a)) / 86400000);
 }
-const fmt = (o) => new Intl.DateTimeFormat('fr-FR', o);
-export const dayName = (iso, style = 'long') => fmt({ weekday: style }).format(fromISO(iso));
-export const dayMonth = (iso) => fmt({ day: 'numeric', month: 'long' }).format(fromISO(iso));
-export const dayShort = (iso) => fmt({ day: 'numeric', month: 'short' }).format(fromISO(iso));
+// Noms écrits en dur : `Intl` dépend des données de langue installées dans l'image (Alpine sans `icu-data-full` répond en anglais).
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+export const dayName = (iso, style = 'long') => { const d = fromISO(iso).getDay(); return style === 'short' ? JOURS_COURTS[d] : JOURS[d]; };
+export const dayMonth = (iso) => { const d = fromISO(iso); return `${d.getDate()} ${MOIS[d.getMonth()]}`; };
+export const dayShort = (iso) => { const d = fromISO(iso); return `${d.getDate()} ${MOIS_COURTS[d.getMonth()]}`; };
 export function weekLabel(monday) {
   const sun = addDays(monday, 6);
   const a = fromISO(monday), b = fromISO(sun);

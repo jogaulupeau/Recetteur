@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.6
+
+- Les dates du menu (appli et MCP) apparaissaient en anglais dans l'image de l'app (Node d'Alpine sans données de langue) : noms de jours et de mois
+  écrits en dur, et `icu-data-full` ajouté à l'image.
+
 ## 0.4.5
 
 - Documentation : l'intégration « Recetteur MCP » doit être ajoutée une fois par *Appareils et services* (ou la ligne `recetteur_mcp:` dans `configuration.yaml`).

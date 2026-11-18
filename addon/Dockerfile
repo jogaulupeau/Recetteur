@@ -1,8 +1,8 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Recetteur n'a aucune dépendance npm : Node.js seul suffit (pas de npm install).
-RUN apk add --no-cache nodejs
+# Recetteur n'a aucune dépendance npm : Node.js seul suffit (pas de npm install). icu-data-full : données de langue (dates, tri).
+RUN apk add --no-cache nodejs icu-data-full
 
 WORKDIR /opt/recetteur
 COPY app/ /opt/recetteur/
