@@ -16,6 +16,7 @@ from aiohttp import web
 from homeassistant.components import persistent_notification, webhook
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -38,8 +39,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def _sync_managed(hass: HomeAssistant, data: dict[str, str]) -> None:
     entries = hass.config_entries.async_entries(DOMAIN)
     if not entries:
-        await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_IMPORT}, data=data)
-        _announce(hass, data[CONF_WEBHOOK_ID])
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_IMPORT}, data=data)
+        if result["type"] == FlowResultType.CREATE_ENTRY:
+            _LOGGER.info("Recetteur MCP : configuration importée depuis %s", MANAGED_FILE)
+            _announce(hass, data[CONF_WEBHOOK_ID])
+        else:  # ne pas annoncer une URL qui ne répondrait pas
+            _LOGGER.error("Recetteur MCP : import de %s impossible (%s)", MANAGED_FILE, result.get("reason", result["type"]))
         return
     entry = entries[0]
     if dict(entry.data) != data:
@@ -82,6 +87,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         local_only=False,  # c'est tout l'intérêt : joignable depuis Internet
         allowed_methods=["POST"],
     )
+    # Sans cette ligne, impossible de savoir si le webhook est actif : Home Assistant répond « 200 » (corps vide) à un webhook inconnu.
+    _LOGGER.info("Recetteur MCP : webhook enregistré (…%s), serveur MCP visé : %s", webhook_id[-4:], target)
     return True
 
 

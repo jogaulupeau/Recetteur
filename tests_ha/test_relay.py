@@ -82,8 +82,10 @@ async def test_only_post(hass, hass_client_no_auth, aioclient_mock, entry):
 
 
 async def test_unknown_webhook_forwards_nothing(hass, hass_client_no_auth, aioclient_mock, entry):
-    await (await hass_client_no_auth()).post("/api/webhook/pas-le-bon-identifiant", json=RPC)
+    resp = await (await hass_client_no_auth()).post("/api/webhook/pas-le-bon-identifiant", json=RPC)
     assert aioclient_mock.call_count == 0
+    # Piège de diagnostic : Home Assistant répond 200 (vide) à un webhook inconnu, pas 404 (voir la doc de dépannage).
+    assert resp.status == 200 and await resp.read() == b""
 
 
 async def test_oversized_body_refused(hass, hass_client_no_auth, aioclient_mock, entry):

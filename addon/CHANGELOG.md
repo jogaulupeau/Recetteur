@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4
+
+- Documentation : un webhook inconnu de Home Assistant répond `200` (corps vide) et non `404` ; guide de dépannage corrigé.
+
 ## 0.4.3
 
 - Journal du serveur MCP : une ligne par requête (méthode, code de réponse, méthode JSON-RPC ou outil appelé, motif d'un refus

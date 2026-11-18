@@ -136,7 +136,10 @@ s'applique à l'ensemble des clients distants ; il est sans effet sur l'accès l
 Le serveur MCP et le relais journalisent chaque requête : le journal de l'app Recetteur contient des lignes `MCP POST /mcp → 401 [sans
 en-tête Authorization] agent="…"`, et celui de Home Assistant des lignes `Relais MCP : POST → …`. Lisez-les d'abord :
 
-- **Aucune ligne** : la requête n'atteint pas Recetteur (adresse erronée, intégration non chargée, `404` du webhook). Testez le `curl`
+- **Aucune ligne** : la requête n'atteint pas Recetteur. Attention : **Home Assistant répond `200` avec un corps vide à un webhook qui n'existe
+  pas** (pour ne rien révéler). Un `curl` sans jeton qui renvoie `200` vide signifie donc que l'intégration n'a pas enregistré le webhook
+  (Home Assistant non redémarré, intégration absente de *Appareils et services*, ou erreur d'import : cherchez « Recetteur MCP » dans les
+  journaux de Home Assistant). Le bon résultat est `401` avec un corps JSON. Testez le `curl`
   décrit plus haut depuis votre ordinateur.
 - **`401 [sans en-tête Authorization]`** : Claude joint bien le serveur mais n'envoie pas le jeton. Dans la boîte de dialogue
   « Ajouter un connecteur personnalisé » de claude.ai (réglages avancés), l'authentification doit être **Sans connexion** et le jeton

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Intégration 0.2.2 : journalise l'enregistrement du webhook et les échecs d'import ; n'annonce l'URL (notification) que si la configuration a bien été importée.
+
 ## 0.1.2
 
 - Intégration 0.2.1 : le relais journalise une ligne par requête dans le journal de Home Assistant (« Relais MCP : POST → 401,
