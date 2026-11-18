@@ -143,7 +143,7 @@ button.chip:hover { background: var(--paper-2); } .chip.on { background: var(--i
 .fiche { border-top: 12px solid var(--t, var(--tomato)); }
 .ing-list { list-style: none; margin: 0; padding: 0; } .ing-list li { padding: .5rem 0; border-bottom: 2px dotted var(--line); display: flex; gap: .6rem; } .ing-list li:last-child { border: 0; }
 .ing-list li.optional { color: var(--ink-soft); } .ing-group { margin: 1rem 0 .2rem; font: 800 .78rem var(--sans); text-transform: uppercase; letter-spacing: .09em; color: var(--ink-soft); }
-.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 1.3rem; }
+.steps { list-style: none; counter-reset: s; margin: 1.1rem 0 0; padding: 0; display: grid; gap: 1.3rem; }
 .steps li { counter-increment: s; position: relative; padding-left: 3rem; }
 .steps li::before { content: counter(s); position: absolute; left: 0; top: -.1rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--butter); color: #1d2b24; border: 2px solid var(--ink); display: grid; place-items: center; font: 800 1.1rem var(--display); box-shadow: var(--hard-sm); }
 .steps h4 { margin: 0 0 .15rem; font-size: 1.08rem; }

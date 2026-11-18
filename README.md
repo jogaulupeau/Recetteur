@@ -20,8 +20,10 @@ mais utilisable seul.
 
 « Carnet d'épicerie fine » : papier et encre verte, tomate et beurre. Titres en [Fraunces](https://github.com/undercasetype/Fraunces)
 et texte en [Figtree](https://github.com/erikdkennedy/figtree), **embarquées** (`public/fonts/`, licence SIL OFL) : l'app est identique
-hors ligne, derrière l'ingress. Chaque recette reçoit une **assiette illustrée générée** d'après son titre et ses ingrédients
-(`public/js/art.js`), sans photo à stocker ; le menu du jour est une ardoise ; le mode cuisine est sombre et très lisible à bout de bras.
+hors ligne, derrière l'ingress. Chaque recette reçoit une **assiette illustrée générée d'après ses ingrédients réels** : une cinquantaine d'icônes
+(tomate, carotte, courgette, pâtes, poulet, saumon, feta, citron…) choisies et dimensionnées selon ce que la recette contient
+vraiment (`shared/visual.js` associe nom → icône et pèse les quantités ; `public/js/art.js` dessine), avec une mise en scène adaptée
+au plat (tarte et pizza en rosace, soupe en bol, crêpes en pile). Sans photo à stocker ; le menu du jour est une ardoise ; le mode cuisine est sombre et très lisible à bout de bras.
 Thèmes clair et sombre automatiques (selon l'appareil).
 
 ## Installation dans Home Assistant
