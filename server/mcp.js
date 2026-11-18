@@ -31,6 +31,7 @@ export const MIN_TOKEN = 24;
 const INSTRUCTIONS = `Recetteur est le carnet de cuisine de l'utilisateur : recettes, menu de la semaine, liste de courses, minuteurs. Les textes sont en français.
 
 Pour CRÉER une recette : lis d'abord la ressource « recetteur://format » (référence du format ${FORMAT}), puis appelle ajouter_recettes avec une liste de recettes. Règles clés : quantités en nombres, unités g/kg/ml/cl/l/c. à soupe/c. à café/gousse…, pas d'unité pour des pièces entières ; chaque ingrédient a un id court et est utilisé dans au moins une étape ; dans le texte d'une étape, écris {{id}} à la place d'une quantité qui dépend du nombre de convives ; ajoute "minuteurs" ou "duree" pour les vraies attentes. Appelle ajouter_recettes avec apercu=true si tu hésites, et corrige les erreurs signalées.
+Pour des recettes données par LIENS (Jow, blog, site de cuisine…) : lis chaque page, convertis la recette au format ${FORMAT} avec "source" = l'adresse de la page (c'est ce qui permet de reconnaître une recette déjà importée), reformule les étapes avec tes mots, puis appelle ajouter_recettes une seule fois pour toutes (mode ignorer : les recettes déjà présentes, même sous un titre légèrement différent, ne sont pas dupliquées et leur id est renvoyé). Planifie ensuite chaque recette — nouvelle ou déjà présente — avec planifier_repas, en reprenant les id renvoyés. Demande les jours et repas souhaités s'ils ne sont pas dits, et le nombre de personnes ; si la page n'est pas lisible (contenu chargé par JavaScript), demande à l'utilisateur de coller le texte de la recette.
 Pour une recette existante : rechercher_recettes → lire_recette (format "json" pour la modifier avec modifier_recette).
 Les quantités se règlent par le nombre de personnes (paramètre "personnes"). Demande-le à l'utilisateur s'il ne l'a pas dit.
 Menu : voir_menu, planifier_repas, remplir_menu (propose d'abord, appliquer=true une fois validé). Courses : liste_de_courses.
@@ -216,7 +217,7 @@ export function buildTools(ctx) {
     },
     {
       name: 'ajouter_recettes', title: 'Ajouter des recettes', readOnly: false,
-      description: `Crée des recettes dans le livre. Chaque recette suit le format ${FORMAT} (voir la ressource recetteur://format). Valide avant d'écrire : les erreurs bloquantes et les corrections automatiques sont renvoyées. mode : ignorer (défaut), remplacer ou dupliquer si une recette du même titre existe.`,
+      description: `Crée des recettes dans le livre. Chaque recette suit le format ${FORMAT} (voir la ressource recetteur://format). Valide avant d'écrire : les erreurs bloquantes et les corrections automatiques sont renvoyées. mode : ignorer (défaut), remplacer ou dupliquer si une recette du même titre — ou venant de la même adresse « source » — existe. Renseigne « source » avec l'adresse d'origine quand elle existe.`,
       inputSchema: obj({ recettes: { type: 'array', items: { type: 'object' }, maxItems: 100, description: 'Liste de recettes au format recetteur/v1 (même pour une seule)' }, mode: { type: 'string', enum: ['ignorer', 'remplacer', 'dupliquer'] }, apercu: bool('true : valider sans rien écrire') }, ['recettes']),
       handler: async (a) => {
         const res = await api('POST', `/api/import?mode=${a.mode ?? 'ignorer'}${a.apercu ? '&apercu=1' : ''}`, a.recettes);
@@ -227,7 +228,9 @@ export function buildTools(ctx) {
           // Une recette invalide n'a pas de titre « validé » : on rappelle celui que l'appelant avait envoyé, pour qu'il sache laquelle corriger.
           const sent = a.recettes[x.index]?.titre;
           const name = x.titre ?? (typeof sent === 'string' && sent.trim() ? sent.trim().slice(0, 100) : `recette n°${x.index + 1}`);
-          out.push(`${x.statut === 'invalide' ? '✗' : '✓'} ${name} — ${LAB[x.statut]}${x.id ? ` (id : ${x.id})` : ''}`);
+          // Pour une recette déjà présente, on donne l'id de l'existante : c'est lui qu'il faut ensuite passer à planifier_repas.
+          const id = x.id ?? x.existant;
+          out.push(`${x.statut === 'invalide' ? '✗' : '✓'} ${name} — ${LAB[x.statut]}${id ? ` (id : ${id})` : ''}`);
           for (const e of x.erreurs) out.push(`    erreur : ${e}`);
           for (const w of x.avertissements) out.push(`    avertissement : ${w}`);
         }

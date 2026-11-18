@@ -103,6 +103,18 @@ une recette par ce canal.
   transmet comme **en-tête de requête** (`Authorization: Bearer VOTRE_JETON`, sans connexion OAuth). Une fois configuré sur le
   web, le connecteur est utilisable aussi depuis l'application mobile.
 
+### Les recettes de la semaine depuis Jow (ou un blog) : donnez les liens à Claude
+
+Jow n'offre pas d'API publique : plutôt que de s'y connecter, laissez Claude faire le travail avec le connecteur Recetteur. Exemple :
+« Voici les recettes de ma semaine : <lien 1>, <lien 2>, <lien 3>. Ajoute celles que je n'ai pas déjà et mets-les à mon menu :
+lundi soir, mardi soir et jeudi midi, pour 4 personnes. »
+
+Claude lit chaque page, la convertit au format Recetteur (avec l'adresse de la page dans `source`), appelle `ajouter_recettes`, puis
+`planifier_repas`. **Une recette déjà importée depuis la même page n'est jamais dupliquée**, même si son titre diffère : la réponse
+d'`ajouter_recettes` donne alors l'identifiant de la recette existante, qui est celui planifié. Rien ne quitte votre réseau
+dans ce parcours : c'est Claude qui lit le site, Recetteur ne contacte aucun site externe. Si une page ne se lit pas (contenu chargé
+par JavaScript), Claude vous demandera de coller le texte de la recette. Vérifiez à la fin dans l'onglet *Menu*.
+
 ### Accès distant par Nabu Casa : l'intégration « Recetteur MCP »
 
 L'adresse `https://….ui.nabu.casa` ne relaie que Home Assistant (port 8123), pas les ports des apps. Mais Home Assistant sait

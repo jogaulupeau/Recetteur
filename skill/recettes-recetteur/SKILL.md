@@ -1,6 +1,6 @@
 ---
 name: recettes-recetteur
-description: Écrit ou convertit des recettes au format JSON « recetteur/v1 » pour l'appli Recetteur (menu, courses, pas à pas). À utiliser dès qu'on demande une recette ou qu'on veut en ranger une pour Recetteur.
+description: Écrit ou convertit des recettes (texte, lien Jow ou blog, photo) au format JSON « recetteur/v1 » pour l'appli Recetteur : menu, courses, pas à pas. À utiliser pour toute recette à ranger.
 ---
 
 # Recettes pour Recetteur
@@ -115,7 +115,7 @@ Une recette seule (objet sans enveloppe) ou un tableau sont aussi acceptés, mai
   mode de cuisson (`four`, `one pot`), saison (`été`). Réutilise les mêmes mots d'une recette à l'autre.
 - **Temps** en minutes entières : `temps_preparation`, `temps_cuisson`, `temps_repos` (marinade, pâte qui lève…).
 - Texte en **français**, sans Markdown dans les champs (pas de `**gras**`, pas de listes à tirets).
-- N'invente pas de `source` ; mets l'URL ou le nom du livre seulement s'ils sont fournis.
+- N'invente pas de `source` ; mets l'URL ou le nom du livre seulement s'ils sont fournis. **Quand la recette vient d'un lien, mets toujours l'adresse de la page dans `source`** : Recetteur s'en sert pour reconnaître une recette déjà importée.
 
 ## Plusieurs recettes d'un coup
 
@@ -128,6 +128,20 @@ recettes quand c'est naturel : cela allège la liste de courses.
 Respecte fidèlement les quantités et les étapes de la source ; ne « corrige » rien en silence. Si une information
 manque (portions, temps), déduis-la raisonnablement et signale-le dans ta réponse (hors JSON). Convertis les
 mesures anglo-saxonnes (cups, oz, °F) en mesures métriques arrondies proprement.
+
+## Recettes données par liens (Jow, blog, site de cuisine)
+
+1. **Lis chaque page** et relève : titre, nombre de personnes, ingrédients avec leurs quantités, étapes, temps. Convertis au format
+   comme pour une conversion ci-dessus ; les quantités sont celles affichées pour le nombre de personnes de la page (indique-le dans
+   `portions`). Reformule les étapes avec tes mots plutôt que de les recopier mot à mot ; les listes d'ingrédients et les durées se
+   reprennent telles quelles.
+2. **`source` = l'adresse de la page** (sans paramètres de suivi). Si la page ne se lit pas (contenu chargé par JavaScript, accès
+   refusé), demande à l'utilisateur de coller le texte de la recette ou une capture : n'invente rien.
+3. **Si le connecteur Recetteur est disponible** (outils `ajouter_recettes`, `planifier_repas`…), n'envoie pas de JSON à copier :
+   appelle `ajouter_recettes` une seule fois avec toutes les recettes (mode `ignorer`). Une recette déjà présente — même sous un titre
+   différent, grâce à `source` — n'est pas dupliquée et la réponse donne son `id`. Planifie ensuite chaque recette, nouvelle ou
+   déjà présente, avec `planifier_repas` (jour, repas midi/soir, nombre de personnes) ; demande ces choix s'ils ne sont pas donnés.
+   Résume à la fin : ajoutées, déjà présentes, placées au menu.
 
 ## Check-list avant de répondre
 

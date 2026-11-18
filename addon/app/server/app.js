@@ -9,7 +9,7 @@ import { JsonStore } from './store.js';
 import { createHa, HaError } from './ha.js';
 import { createTimers } from './minuteurs.js';
 import { validateRecipe, validateBundle } from '../shared/recipe.js';
-import { slugify } from '../shared/text.js';
+import { slugify, sourceKey } from '../shared/text.js';
 import { FORMAT } from '../shared/vocab.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -243,11 +243,18 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     const mode = query.get('mode') || 'ignorer';
     if (!['ignorer', 'remplacer', 'dupliquer'].includes(mode)) throw bad('mode : ignorer, remplacer ou dupliquer.');
     const apercu = query.get('apercu') === '1';
+    // Une recette déjà importée depuis la même adresse (champ `source`) est un doublon même si son titre diffère légèrement.
+    const bySource = new Map();
+    for (const e of Object.values(recettes.data.recettes)) {
+      const key = sourceKey(e.recette.source);
+      if (key && !bySource.has(key)) bySource.set(key, e);
+    }
     const results = validateBundle(body).map((r) => {
       const out = { index: r.index, titre: r.recipe?.titre ?? null, erreurs: r.errors, avertissements: r.warnings };
       if (!r.recipe) return { ...out, statut: 'invalide' };
       const slug = slugify(r.recipe.titre);
-      const existing = Object.hasOwn(recettes.data.recettes, slug) ? recettes.data.recettes[slug] : undefined;
+      const sameSource = bySource.get(sourceKey(r.recipe.source));
+      const existing = Object.hasOwn(recettes.data.recettes, slug) ? recettes.data.recettes[slug] : sameSource;
       if (existing) out.existant = existing.id;
       const statut = !existing ? 'nouveau' : mode === 'remplacer' ? 'remplace' : mode === 'dupliquer' ? 'nouveau' : 'ignore';
       return { ...out, statut, _recipe: r.recipe };

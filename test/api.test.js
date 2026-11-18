@@ -58,6 +58,29 @@ test('import : aperçu sans écriture, puis import, puis doublons', async () => 
   await api('DELETE', '/api/recettes/spaghetti-bolognaise-2');
 });
 
+test('import : une recette déjà importée depuis la même adresse est un doublon, même sous un autre titre', async () => {
+  const base = { ...exemples[1], titre: 'Poulet jow du jeudi', source: 'https://www.jow.fr/recipes/poulet-coco-123?utm_source=x#top' };
+  let r = await api('POST', '/api/import', [base]);
+  assert.equal(r.body.resultats[0].statut, 'nouveau');
+  const id = r.body.resultats[0].id;
+  // autre titre, même page (http, sans www, sans paramètres, barre finale) : reconnue
+  r = await api('POST', '/api/import', [{ ...base, titre: 'Poulet coco (Jow)', source: 'http://jow.fr/recipes/poulet-coco-123/' }]);
+  assert.equal(r.body.resultats[0].statut, 'ignore');
+  assert.equal(r.body.resultats[0].existant, id);
+  // autre page : nouvelle recette
+  r = await api('POST', '/api/import', [{ ...base, titre: 'Autre plat jow', source: 'https://jow.fr/recipes/autre-456' }]);
+  assert.equal(r.body.resultats[0].statut, 'nouveau');
+  await api('DELETE', `/api/recettes/${r.body.resultats[0].id}`);
+  // sans source exploitable : seul le titre compte
+  r = await api('POST', '/api/import', [{ ...base, titre: 'Sans source', source: 'un livre' }, { ...base, titre: 'Sans source', source: 'un livre' }]);
+  assert.equal(r.body.resume.nouveaux, 2);
+  // mode remplacer : remplace la recette de la même source
+  r = await api('POST', '/api/import?mode=remplacer', [{ ...base, titre: 'Poulet coco (Jow)', portions: 8, source: 'https://jow.fr/recipes/poulet-coco-123' }]);
+  assert.equal(r.body.resultats[0].statut, 'remplace');
+  assert.equal((await api('GET', `/api/recettes/${id}`)).body.recette.portions, 8);
+  for (const e of (await api('GET', '/api/recettes')).body.filter((x) => /jow|sans-source/i.test(x.id))) await api('DELETE', `/api/recettes/${e.id}`);
+});
+
 test('CRUD recette, favoris, erreurs de validation lisibles', async () => {
   let r = await api('POST', '/api/recettes', { titre: 'x' });
   assert.equal(r.status, 400);

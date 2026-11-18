@@ -346,3 +346,22 @@ test('journal : une ligne par requête, qui aide à diagnostiquer un client, san
   for (const secret of [TOKEN, 'faux-jeton-tout-a-fait-faux-123', 'CONTENU-SECRET']) assert.ok(!all.includes(secret), 'le journal ne doit contenir ni jeton ni arguments');
   } finally { await t.close(); }
 });
+
+test('parcours « recettes données par liens » : import, doublon reconnu avec son id, puis planification', async () => {
+  const t = await boot();
+  try {
+    const jow = { ...exemples[0], titre: 'Gratin de courgettes', source: 'https://jow.fr/recipes/gratin-courgettes-42' };
+    let r = await t.tool('ajouter_recettes', { recettes: [jow] });
+    assert.match(r.text, /nouvelle \(id : gratin-de-courgettes\)/);
+    // la semaine suivante, la même page revient sous un autre titre : pas de doublon, et l'id existant est donné
+    r = await t.tool('ajouter_recettes', { recettes: [{ ...jow, titre: 'Gratin de courgettes (Jow)', source: 'https://www.jow.fr/recipes/gratin-courgettes-42?x=1' }, { ...exemples[1], titre: 'Nouveau plat', source: 'https://jow.fr/recipes/nouveau-7' }] });
+    assert.match(r.text, /1 nouvelle\(s\), 0 remplacée\(s\), 1 ignorée\(s\)/);
+    assert.match(r.text, /Gratin de courgettes \(Jow\) — déjà présente \(ignorée\) \(id : gratin-de-courgettes\)/);
+    const planned = await t.tool('planifier_repas', { date: '2026-11-23', creneau: 'soir', recette_id: 'gratin-de-courgettes' });
+    assert.match(planned.text, /Ajouté au menu/);
+    // les instructions du serveur expliquent le parcours à Claude
+    const init = await t.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 't', version: '1' } });
+    assert.match(init.result.instructions, /LIENS/);
+    assert.match(init.result.instructions, /source/);
+  } finally { await t.close(); }
+});

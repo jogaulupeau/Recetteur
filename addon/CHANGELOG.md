@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- **Import de recettes par liens (Jow, blogs…) via Claude** : donnez à Claude les liens des recettes de la semaine ; il lit les pages,
+  les convertit, les ajoute à Recetteur et les place au menu avec le connecteur MCP. Les instructions du serveur MCP décrivent ce parcours.
+- **Détection des doublons par adresse source** : une recette déjà importée depuis la même page (champ `source`) n'est pas dupliquée,
+  même si son titre diffère ; `ajouter_recettes` renvoie l'`id` de la recette existante, à passer à `planifier_repas`.
+- Skill `recettes-recetteur` : section « Recettes données par liens » (à réimporter dans Claude : `skill/recettes-recetteur.zip`).
+
 ## 0.4.6
 
 - Les dates du menu (appli et MCP) apparaissaient en anglais dans l'image de l'app (Node d'Alpine sans données de langue) : noms de jours et de mois

@@ -15,6 +15,16 @@ export function slugify(s) {
   return normalize(s).replace(/ /g, '-').slice(0, 80) || 'recette';
 }
 
+/**
+ * Clé de rapprochement d'une adresse de recette (champ `source`) : « https://www.Jow.fr/recipes/x/?utm=1#a » et
+ * « http://jow.fr/recipes/x » donnent la même clé. Chaîne vide si `source` n'est pas une adresse http(s).
+ */
+export function sourceKey(url) {
+  const m = /^https?:\/\/([^\s/?#]+)([^\s?#]*)/i.exec(String(url ?? '').trim());
+  if (!m) return '';
+  return `${m[1].toLowerCase().replace(/^www\./, '')}${m[2].replace(/\/+$/, '')}`;
+}
+
 // Clé de rapprochement d'un ingrédient pour la liste de courses :
 // « Tomates pelées » et « tomate pelée » donnent la même clé.
 export function ingredientKey(nom) {
