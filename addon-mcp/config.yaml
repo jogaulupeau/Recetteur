@@ -1,5 +1,5 @@
 name: Recetteur MCP
-version: "0.1.0"
+version: "0.1.1"
 slug: recetteur_mcp
 description: >-
   Accès distant de Claude à Recetteur par votre adresse Home Assistant (Nabu
@@ -28,6 +28,7 @@ schema:
   # Adresse INTERNE du serveur MCP de l'app Recetteur : http://<nom d'hôte de l'app>:8100/mcp (voir sa page « Informations »).
   recetteur_url: url
   # Facultatif : votre adresse externe (https://xxxx.ui.nabu.casa), seulement pour afficher l'URL complète dans le journal.
-  remote_url: url?
+  # (texte libre : le schéma « url » du Supervisor refuse la chaîne vide, valeur par défaut ; start.py contrôle l'adresse)
+  remote_url: str?
   # Retire l'intégration et son fichier de configuration, puis s'arrête (avant de désinstaller l'app).
   retirer_integration: bool

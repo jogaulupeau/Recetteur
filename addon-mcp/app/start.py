@@ -214,7 +214,9 @@ def main(env: dict[str, str] | None = None, watch: bool = True) -> int:
         log("ATTENTION", "Redémarrez Home Assistant (Paramètres → Système → Redémarrer) pour que l'intégration soit chargée avec cette configuration.")
         log("INFO", "Une notification « Recetteur MCP » donnera ensuite l'URL à saisir dans Claude.")
     remote = str(opts.get("remote_url", "")).strip().rstrip("/")
-    if remote:
+    if remote and not remote.lower().startswith(("http://", "https://")):
+        log("ATTENTION", "remote_url ignorée : elle doit commencer par https:// (ex. https://xxxx.ui.nabu.casa).")
+    elif remote:
         log("INFO", f"URL à donner à Claude (secret : ne la partagez pas) : {remote}/api/webhook/{webhook_id}")
 
     ok, detail = probe(url)

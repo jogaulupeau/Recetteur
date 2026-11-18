@@ -1,5 +1,6 @@
 """App « Recetteur MCP » (addon-mcp/app/start.py) : bibliothèque standard, testée hors Home Assistant."""
 import importlib.util
+import sys
 import json
 import os
 import shutil
@@ -12,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+sys.dont_write_bytecode = True  # ne pas laisser de __pycache__ dans addon-mcp/app (le test de packaging le refuse)
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("start", ROOT / "addon-mcp" / "app" / "start.py")
 start = importlib.util.module_from_spec(spec)
@@ -242,3 +244,17 @@ def test_only_two_places_are_written(dirs, tmp_path):
     added = set(after) - set(before)
     assert all(str(p) == "recetteur_mcp.json" or str(p).startswith("custom_components/recetteur_mcp/") for p in added), added
     assert all(after[p] == before[p] for p in before), "un fichier existant a été modifié"
+
+
+def test_remote_url_not_http_is_ignored(dirs, tmp_path, capsys):
+    config, data = dirs
+    assert start.main(_env(config, data, tmp_path, remote_url="n'importe quoi"), watch=False) == 0
+    out = capsys.readouterr().out
+    assert "remote_url ignorée" in out and "/api/webhook/" not in out
+
+
+def test_config_schema_never_uses_url_for_an_optional_empty_field():
+    """Le Supervisor refuse "" pour le type `url` : seul recetteur_url (jamais vide) peut l'utiliser."""
+    cfg = (ROOT / "addon-mcp" / "config.yaml").read_text()
+    code = "\n".join(line.split("#")[0] for line in cfg.splitlines())
+    assert "remote_url: str?" in code and "remote_url: url" not in code
