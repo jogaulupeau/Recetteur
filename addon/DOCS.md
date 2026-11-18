@@ -131,6 +131,24 @@ interne en cas de panne. Ne partagez pas l'URL. Pour supprimer l'accès distant 
 *Limite connue* : tous les accès passent par Home Assistant, donc le blocage d'adresse du serveur MCP (10 jetons faux en 1 minute)
 s'applique à l'ensemble des clients distants ; il est sans effet sur l'accès local direct.
 
+### Si Claude n'arrive pas à se connecter
+
+Le serveur MCP et le relais journalisent chaque requête : le journal de l'app Recetteur contient des lignes `MCP POST /mcp → 401 [sans
+en-tête Authorization] agent="…"`, et celui de Home Assistant des lignes `Relais MCP : POST → …`. Lisez-les d'abord :
+
+- **Aucune ligne** : la requête n'atteint pas Recetteur (adresse erronée, intégration non chargée, `404` du webhook). Testez le `curl`
+  décrit plus haut depuis votre ordinateur.
+- **`401 [sans en-tête Authorization]`** : Claude joint bien le serveur mais n'envoie pas le jeton. Dans la boîte de dialogue
+  « Ajouter un connecteur personnalisé » de claude.ai (réglages avancés), l'authentification doit être **Sans connexion** et le jeton
+  doit être saisi dans **En-têtes de requête** : nom `authorization`, valeur `Bearer <jeton>` (Claude envoie la valeur telle quelle,
+  sans ajouter `Bearer`). Cette section est en **bêta et réservée à certaines organisations** : si elle n'apparaît pas, ce compte ne peut
+  pas envoyer de jeton statique. Les réglages d'authentification ne se modifient pas : supprimez le connecteur et recréez-le.
+- **`401 [jeton invalide]`** : le jeton saisi dans Claude diffère de l'option `mcp_token`.
+- **`200`** : la connexion fonctionne ; le problème est ailleurs.
+
+D'après la documentation de Claude, la connexion se fait depuis le cloud d'Anthropic (IPv4 uniquement, plage `160.79.104.0/21`),
+et l'en-tête `Authorization` est perdu si l'adresse du connecteur redirige vers une autre adresse : saisissez l'URL finale.
+
 
 **Sécurité** : c'est le seul accès à l'app qui ne passe pas par l'ingress de Home Assistant, donc **le jeton est la seule
 barrière**. Il est exigé à chaque requête (comparaison en temps constant), l'en-tête `Origin` est refusé (protection des

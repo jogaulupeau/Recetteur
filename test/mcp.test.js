@@ -10,7 +10,8 @@ import { exemples } from './helpers.js';
 
 const TOKEN = 'jeton-de-test-0123456789-abcdefghij';
 const errors = [];
-const log = { info() {}, error: (...a) => errors.push(a.join(' ')) };
+const infos = [];
+const log = { info: (...a) => infos.push(a.join(' ')), error: (...a) => errors.push(a.join(' ')) };
 
 async function boot({ readOnly = false, supervisorToken = null, fetchImpl } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'recetteur-mcp-'));
@@ -326,4 +327,22 @@ test('une erreur interne dans un outil ne fuit rien et ne coupe pas le service',
   Object.defineProperty(t.app.stores.recettes.data, 'recettes', { value: original, writable: true, configurable: true });
   assert.equal((await t.rpc('ping')).result !== undefined, true);
   await t.close();
+});
+
+
+test('journal : une ligne par requête, qui aide à diagnostiquer un client, sans jeton ni contenu', async () => {
+  const t = await boot();
+  try {
+  infos.length = 0;
+  await t.post({ jsonrpc: '2.0', id: 1, method: 'ping' }, { headers: { Authorization: '', 'User-Agent': 'Claude-Test/1.0 "x"' } });
+  await t.post({ jsonrpc: '2.0', id: 2, method: 'ping' }, { headers: { Authorization: 'Bearer faux-jeton-tout-a-fait-faux-123' } });
+  await t.post({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'lister_minuteurs', arguments: { secret: 'CONTENU-SECRET' } } });
+  const lines = infos.filter((l) => l.startsWith('MCP '));
+  assert.equal(lines.length, 3);
+  assert.match(lines[0], /POST \/mcp → 401 \[sans en-tête Authorization\] agent="Claude-Test\/1\.0 x"/);
+  assert.match(lines[1], /→ 401 \[jeton invalide\]/);
+  assert.match(lines[2], /→ 200 tools\/call lister_minuteurs/);
+  const all = infos.join('\n');
+  for (const secret of [TOKEN, 'faux-jeton-tout-a-fait-faux-123', 'CONTENU-SECRET']) assert.ok(!all.includes(secret), 'le journal ne doit contenir ni jeton ni arguments');
+  } finally { await t.close(); }
 });

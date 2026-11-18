@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
+import time
 
 from aiohttp import ClientError, ClientSession, ClientTimeout, web
 
@@ -28,8 +30,26 @@ def _error(status: int, message: str, headers: dict[str, str] | None = None) -> 
     return web.json_response({"error": message}, status=status, headers=headers)
 
 
+def _clean(value: str | None, limit: int = 60) -> str:
+    return re.sub(r'[^\x20-\x7e]|["\\]', "", value or "")[:limit]
+
+
 async def relay(session: ClientSession, target: str, request: web.Request) -> web.Response:
-    """Transmet la requête au serveur MCP et renvoie sa réponse telle quelle."""
+    """Transmet la requête au serveur MCP, renvoie sa réponse telle quelle et journalise une ligne (jamais le jeton ni le corps)."""
+    started = time.monotonic()
+    response = await _relay(session, target, request)
+    _LOGGER.info(
+        "Relais MCP : %s → %s, en-tête Authorization %s, agent \"%s\", %d ms",
+        request.method,
+        response.status,
+        "présent" if request.headers.get("Authorization") else "absent",
+        _clean(request.headers.get("User-Agent")),
+        (time.monotonic() - started) * 1000,
+    )
+    return response
+
+
+async def _relay(session: ClientSession, target: str, request: web.Request) -> web.Response:
     if request.method != "POST":
         return _error(405, "POST uniquement.", {"Allow": "POST"})
     # Comme le serveur MCP (spécification MCP) : un navigateur qui cible cette URL est refusé.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3
+
+- Journal du serveur MCP : une ligne par requête (méthode, code de réponse, méthode JSON-RPC ou outil appelé, motif d'un refus
+  « sans en-tête Authorization » ou « jeton invalide », agent du client). Ni le jeton ni le contenu des requêtes ne sont écrits.
+  Utile pour comprendre pourquoi un client (Claude) n'arrive pas à se connecter.
+
 ## 0.4.2
 
 - Documentation : nouvelle app compagnon **Recetteur MCP** (dossier `addon-mcp/`) qui installe l'intégration de relais pour l'accès

@@ -439,6 +439,8 @@ export function createEngine({ tools, version = '0', readOnly = false, log = con
  * Serveur HTTP du MCP : un seul point d'entrée, POST /mcp.
  * @param {object} o { engine, token, log, maxPerMinute }
  */
+const clean = (v, max) => String(v ?? '').replace(/[^\x20-\x7e]/g, '').replace(/["\\]/g, '').slice(0, max);
+
 export function createMcpServer({ engine, token, log = console, maxPerMinute = 300 }) {
   if (typeof token !== 'string' || token.length < MIN_TOKEN) throw new Error(`Jeton MCP trop court (${MIN_TOKEN} caractères minimum).`);
   const tokenDigest = sha(token);
@@ -468,6 +470,12 @@ export function createMcpServer({ engine, token, log = console, maxPerMinute = 3
 
   const server = http.createServer(async (req, res) => {
     const ip = String(req.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
+    // Une ligne de journal par requête, sans jamais écrire le jeton ni la requête elle-même : de quoi voir ce que le client envoie.
+    const t0 = Date.now();
+    let rpc = '';
+    let auth = '';
+    res.on('finish', () => log.info?.(`MCP ${req.method} ${String(req.url).split('?')[0].slice(0, 40)} → ${res.statusCode}${rpc ? ` ${rpc}` : ''}${auth ? ` [${auth}]` : ''} `
+      + `agent="${clean(req.headers['user-agent'], 60)}" ${req.headers.origin ? 'origine=oui ' : ''}${Date.now() - t0} ms`));
     try {
       // Sans quoi un site web visité par l'utilisateur pourrait viser le serveur depuis son navigateur (DNS rebinding) : la
       // spécification impose de refuser tout en-tête Origin. Les clients MCP (Claude, SDK) n'en envoient pas.
@@ -478,6 +486,7 @@ export function createMcpServer({ engine, token, log = console, maxPerMinute = 3
 
       const m = /^Bearer\s+(.+)$/i.exec(req.headers.authorization ?? '');
       if (!m || !crypto.timingSafeEqual(sha(m[1].trim()), tokenDigest)) {
+        auth = req.headers.authorization ? 'jeton invalide' : 'sans en-tête Authorization';
         authFailed(ip);
         return json(res, 401, { error: 'Jeton absent ou invalide.' }, { 'WWW-Authenticate': 'Bearer realm="recetteur"' });
       }
@@ -499,6 +508,7 @@ export function createMcpServer({ engine, token, log = console, maxPerMinute = 3
       } catch {
         return json(res, 400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'JSON invalide.' } });
       }
+      rpc = Array.isArray(body) ? 'lot' : `${clean(body?.method, 40)}${body?.method === 'tools/call' ? ` ${clean(body.params?.name, 40)}` : ''}`;
       if (Array.isArray(body)) {
         if (!body.length || body.length > 50) return json(res, 400, { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Lot vide ou trop grand.' } });
         const out = (await Promise.all(body.map((x) => engine.handle(x)))).filter(Boolean);

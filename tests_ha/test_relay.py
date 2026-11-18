@@ -43,6 +43,15 @@ async def test_forwards_request_and_response(hass, hass_client_no_auth, aioclien
     assert not {"Cookie", "X-Evil"} & set(headers)
 
 
+async def test_one_log_line_without_secrets(hass, hass_client_no_auth, aioclient_mock, entry, caplog):
+    aioclient_mock.post(TARGET, status=401, json={"error": "x"})
+    caplog.set_level("INFO", logger="custom_components.recetteur_mcp.proxy")
+    await (await hass_client_no_auth()).post(f"/api/webhook/{WID}", json=RPC, headers={"User-Agent": "Claude-Test/1.0", "Authorization": "Bearer le-jeton-secret"})
+    lines = [r.getMessage() for r in caplog.records if r.name.endswith("proxy")]
+    assert len(lines) == 1 and "→ 401" in lines[0] and "Authorization présent" in lines[0] and "Claude-Test/1.0" in lines[0]
+    assert "le-jeton-secret" not in lines[0] and WID not in lines[0]
+
+
 async def test_passes_auth_errors_through(hass, hass_client_no_auth, aioclient_mock, entry):
     """Le jeton est vérifié par le serveur MCP, pas par le relais : son 401 (et son en-tête) traversent."""
     aioclient_mock.post(TARGET, status=401, json={"error": "Jeton absent ou invalide."}, headers={"Content-Type": "application/json", "WWW-Authenticate": 'Bearer realm="recetteur"'})
