@@ -97,3 +97,30 @@ async def test_import_refuses_second_entry_and_bad_data(hass):
 
 def test_parse_managed_accepts_a_good_file():
     assert parse_managed(json.dumps({"url": "https://h.example/mcp", "webhook_id": "x" * 40, "ignore": 1})) == {"url": "https://h.example/mcp", "webhook_id": "x" * 40}
+
+
+async def test_add_integration_from_ui_needs_no_input_when_managed(hass, hass_client_no_auth, aioclient_mock):
+    """Cas réel : Home Assistant ne charge pas l'intégration sans entrée ni ligne YAML ; on l'ajoute une fois par l'interface."""
+    _write(hass, {"url": TARGET, "webhook_id": WID})
+    aioclient_mock.post(TARGET, status=200, json={"jsonrpc": "2.0", "id": 1, "result": {}}, headers={"Content-Type": "application/json"})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["type"] == "form" and result["step_id"] == "done"        # pas de saisie de l'adresse
+    assert f"/api/webhook/{WID}" in result["description_placeholders"]["url"]  # l'URL déjà connue de l'utilisateur est conservée
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] == "create_entry"
+    assert dict(result["data"]) == {CONF_URL: TARGET, CONF_WEBHOOK_ID: WID}
+    await hass.async_block_till_done()
+    assert (await (await hass_client_no_auth()).post(f"/api/webhook/{WID}", json=RPC)).status == 200
+    assert aioclient_mock.call_count == 1
+
+
+async def test_yaml_line_enables_automatic_import(hass):
+    _write(hass, {"url": TARGET, "webhook_id": WID})
+    assert await async_setup_component(hass, DOMAIN, {DOMAIN: {}})   # `recetteur_mcp:` dans configuration.yaml
+    await hass.async_block_till_done()
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 1
+
+
+async def test_without_file_the_ui_still_asks_for_the_address(hass):
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["type"] == "form" and result["step_id"] == "user"

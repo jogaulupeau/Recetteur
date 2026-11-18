@@ -212,7 +212,7 @@ def main(env: dict[str, str] | None = None, watch: bool = True) -> int:
     log("INFO", f"Intégration recetteur_mcp : {labels[status]}. Serveur MCP visé : {url}")
     if status != "unchanged" or changed:
         log("ATTENTION", "Redémarrez Home Assistant (Paramètres → Système → Redémarrer) pour que l'intégration soit chargée avec cette configuration.")
-        log("INFO", "Une notification « Recetteur MCP » donnera ensuite l'URL à saisir dans Claude.")
+        log("INFO", "Puis, une seule fois : Paramètres → Appareils et services → Ajouter une intégration → « Recetteur MCP » → Valider (aucune saisie : tout est déjà configuré).")
     remote = str(opts.get("remote_url", "")).strip().rstrip("/")
     if remote and not remote.lower().startswith(("http://", "https://")):
         log("ATTENTION", "remote_url ignorée : elle doit commencer par https:// (ex. https://xxxx.ui.nabu.casa).")

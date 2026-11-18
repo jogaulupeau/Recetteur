@@ -17,6 +17,7 @@ from homeassistant.components import persistent_notification, webhook
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -26,6 +27,11 @@ from .managed import read_managed
 from .proxy import relay
 
 _LOGGER = logging.getLogger(__name__)
+
+# Permet la ligne `recetteur_mcp:` dans configuration.yaml (sans option) : c'est ce qui déclenche l'import automatique au démarrage.
+# Sans cette ligne ni entrée de configuration, Home Assistant ne charge pas l'intégration : il faut alors l'ajouter une fois par
+# *Appareils et services* (aucune saisie en mode géré).
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

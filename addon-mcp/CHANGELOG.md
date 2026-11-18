@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- **Correctif important** : Home Assistant ne charge pas une intégration qui n'a ni entrée de configuration ni ligne dans
+  `configuration.yaml` ; l'import automatique ne se déclenchait donc jamais et le webhook n'existait pas (réponse `200` vide).
+  Il faut désormais ajouter l'intégration **une fois** (*Appareils et services → Ajouter une intégration → Recetteur MCP*, sans saisie : l'adresse
+  et le secret écrits par l'app sont repris), ou ajouter `recetteur_mcp:` à `configuration.yaml` pour l'import automatique.
+- Intégration 0.3.0 : assistant sans saisie en mode géré, ligne YAML `recetteur_mcp:` acceptée.
+
 ## 0.1.3
 
 - Intégration 0.2.2 : journalise l'enregistrement du webhook et les échecs d'import ; n'annonce l'URL (notification) que si la configuration a bien été importée.

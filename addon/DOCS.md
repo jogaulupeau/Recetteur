@@ -117,8 +117,9 @@ l'intégration et sa configuration dans Home Assistant à votre place, sans HACS
 1. L'option `mcp_token` doit être renseignée dans l'app Recetteur (sans jeton, le serveur MCP est désactivé).
 2. Installer l'app **Recetteur MCP**, renseigner `recetteur_url` : `http://<nom d'hôte de l'app Recetteur>:8100/mcp` (le nom d'hôte est
    affiché sur la page *Informations* de l'app Recetteur, du type `xxxxxxxx-recetteur`), puis la démarrer et **redémarrer Home Assistant**.
-3. Une notification « Recetteur MCP » donne l'**URL à saisir dans Claude** : connecteur personnalisé avec l'en-tête
-   `Authorization: Bearer VOTRE_JETON`.
+3. Une fois : *Paramètres → Appareils et services → Ajouter une intégration → « Recetteur MCP »* (aucune saisie). L'assistant affiche l'**URL
+   à saisir dans Claude** : connecteur personnalisé avec l'en-tête `Authorization: Bearer VOTRE_JETON`. (Ou la ligne `recetteur_mcp:` dans
+   `configuration.yaml` pour l'import automatique à chaque démarrage.)
 
 *Autre méthode, sans app* : dans HACS, *Dépôts personnalisés* → `https://github.com/jogaulupeau/recetteur` (type *Intégration*), ou copie de
 `custom_components/recetteur_mcp` dans `/config/custom_components/` ; après redémarrage, *Appareils et services → Ajouter une

@@ -14,8 +14,12 @@ serveur MCP de Recetteur, joint par le réseau interne.
      affiché sur la page *Informations* de l'app Recetteur (du type `xxxxxxxx-recetteur`).
    - `remote_url` (facultatif) : votre adresse externe, seulement pour afficher l'URL complète dans le journal.
 3. Démarrez l'app : elle installe l'intégration et écrit sa configuration. Le journal indique de **redémarrer Home Assistant**.
-4. Après le redémarrage, une notification **« Recetteur MCP »** donne l'URL à saisir dans Claude : connecteur personnalisé, avec
-   l'en-tête de requête `Authorization: Bearer <votre jeton mcp_token>`.
+4. Après le redémarrage, **ajoutez l'intégration une seule fois** : *Paramètres → Appareils et services → Ajouter une intégration →
+   « Recetteur MCP »*. Aucune saisie : l'adresse et le secret sont déjà configurés par l'app ; l'assistant affiche l'URL à donner à Claude,
+   qui reste la même d'un redémarrage à l'autre. (Home Assistant ne charge pas une intégration qui n'a ni entrée de configuration ni ligne
+   dans `configuration.yaml` : sans cette étape, le webhook n'existe pas et répond `200` vide.)
+   *Variante sans clic* : ajoutez la ligne `recetteur_mcp:` à votre `configuration.yaml` ; l'intégration s'importera alors seule à chaque démarrage.
+5. Dans Claude : connecteur personnalisé vers cette URL, avec l'en-tête de requête `Authorization: Bearer <votre jeton mcp_token>`.
 
 L'app reste active pour surveiller que le serveur MCP de Recetteur répond (journal : « actif et protégé » = tout va bien).
 
@@ -50,4 +54,6 @@ Assistant, supprimez l'entrée « Recetteur MCP » (*Appareils et services*) si 
 - *« Dossier de configuration de Home Assistant introuvable »* : l'app n'a pas pu monter la configuration ; relancez-la après mise à jour du Supervisor.
 - *« injoignable »* : vérifiez le nom d'hôte de `recetteur_url`, que l'app Recetteur tourne, et que son option `mcp_token` est renseignée
   (sans jeton, le serveur MCP est désactivé).
-- Aucune notification après le redémarrage : consultez le journal de Home Assistant (recherchez « Recetteur MCP »).
+- `curl` sans jeton : `200` **vide** = webhook non enregistré (étape 4 non faite, ou erreur d'import : cherchez « Recetteur MCP » dans les journaux de
+  Home Assistant) ; `401` avec un corps JSON = tout fonctionne.
+- Aucune notification après le redémarrage : normal tant que l'étape 4 n'est pas faite ; l'assistant affiche l'URL.

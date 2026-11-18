@@ -11,9 +11,9 @@ from homeassistant.components import webhook
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_URL, CONF_WEBHOOK_ID, DEFAULT_URL, DOMAIN
+from .const import CONF_URL, CONF_WEBHOOK_ID, DEFAULT_URL, DOMAIN, MANAGED_FILE
 from .helpers import webhook_url
-from .managed import parse_managed
+from .managed import parse_managed, read_managed
 
 PING = {"jsonrpc": "2.0", "id": 1, "method": "ping"}
 
@@ -32,6 +32,12 @@ class RecetteurMcpConfigFlow(ConfigFlow, domain=DOMAIN):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
         errors: dict[str, str] = {}
+        if user_input is None:
+            # Mode géré : l'app « Recetteur MCP » a déjà tout écrit (adresse et secret) : aucune saisie, on passe à la confirmation.
+            managed = await self.hass.async_add_executor_job(read_managed, self.hass.config.path(MANAGED_FILE))
+            if managed is not None:
+                self._url, self._webhook_id = managed[CONF_URL], managed[CONF_WEBHOOK_ID]
+                return await self.async_step_done()
         if user_input is not None:
             url = user_input[CONF_URL].strip()
             parsed = urlparse(url)

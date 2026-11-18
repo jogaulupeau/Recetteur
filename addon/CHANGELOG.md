@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.5
+
+- Documentation : l'intégration « Recetteur MCP » doit être ajoutée une fois par *Appareils et services* (ou la ligne `recetteur_mcp:` dans `configuration.yaml`).
+
 ## 0.4.4
 
 - Documentation : un webhook inconnu de Home Assistant répond `200` (corps vide) et non `404` ; guide de dépannage corrigé.
