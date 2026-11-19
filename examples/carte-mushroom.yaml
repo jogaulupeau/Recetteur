@@ -1,0 +1,106 @@
+type: vertical-stack
+cards:
+  - type: custom:mushroom-title-card
+    title: Au menu aujourd'hui
+    subtitle: >-
+      {% set j = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] %}
+      {% set m = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+      {{ j[now().weekday()] }} {{ now().day }} {{ m[now().month - 1] }}
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: custom:mushroom-template-card
+        entity: sensor.recetteur_menu_midi
+        layout: vertical
+        fill_container: true
+        primary: Ce midi
+        multiline_secondary: true
+        secondary: >-
+          {% set r = state_attr('sensor.recetteur_menu_midi', 'recettes') or [] %}
+          {% if r %}{{ states('sensor.recetteur_menu_midi') }} — {{ r | map(attribute='duree_minutes') | max }} min · {{ r[0].personnes }} pers.
+          {% else %}Rien de prévu{% endif %}
+        icon: >-
+          {% set t = (state_attr('sensor.recetteur_menu_midi', 'titres') or [''])[0] | lower %}
+          {% set m = {
+          'soupe': 'mdi:pot-steam', 'velouté': 'mdi:pot-steam', 'potage': 'mdi:pot-steam',
+          'salade': 'mdi:leaf', 'tartare': 'mdi:leaf',
+          'pizza': 'mdi:pizza',
+          'burger': 'mdi:hamburger',
+          'poulet': 'mdi:food-drumstick', 'dinde': 'mdi:food-drumstick',
+          'bœuf': 'mdi:food-steak', 'boeuf': 'mdi:food-steak', 'steak': 'mdi:food-steak', 'porc': 'mdi:food-steak', 'chili': 'mdi:food-steak',
+          'saumon': 'mdi:fish', 'poisson': 'mdi:fish', 'cabillaud': 'mdi:fish', 'thon': 'mdi:fish', 'crevette': 'mdi:fish',
+          'omelette': 'mdi:egg-fried', 'quiche': 'mdi:egg-fried',
+          'tarte': 'mdi:cake-variant', 'gâteau': 'mdi:cake-variant', 'crumble': 'mdi:cake-variant', 'brownie': 'mdi:cake-variant', 'crêpe': 'mdi:cake-variant',
+          'frites': 'mdi:french-fries', 'gratin': 'mdi:french-fries',
+          'pâtes': 'mdi:pasta', 'spaghetti': 'mdi:pasta', 'tagliatelle': 'mdi:pasta', 'lasagne': 'mdi:pasta', 'gnocchi': 'mdi:pasta',
+          'risotto': 'mdi:rice', 'curry': 'mdi:rice', 'riz': 'mdi:rice'
+          } %}
+          {% set ns = namespace(i='mdi:silverware-fork-knife', f=false) %}
+          {% if (state_attr('sensor.recetteur_menu_midi', 'nombre') | int(0)) == 0 %}{% set ns.i = 'mdi:food-off-outline' %}
+          {% else %}{% for k, v in m.items() %}{% if not ns.f and k in t %}{% set ns.i = v %}{% set ns.f = true %}{% endif %}{% endfor %}{% endif %}
+          {{ ns.i }}
+        icon_color: >-
+          {% set n = state_attr('sensor.recetteur_menu_midi', 'nombre') | int(0) %}
+          {% set f = (state_attr('sensor.recetteur_menu_midi', 'recettes') or []) | selectattr('fait') | list | length %}
+          {{ 'disabled' if n == 0 else 'green' if f == n else 'amber' }}
+        badge_icon: >-
+          {% set n = state_attr('sensor.recetteur_menu_midi', 'nombre') | int(0) %}
+          {% set f = (state_attr('sensor.recetteur_menu_midi', 'recettes') or []) | selectattr('fait') | list | length %}
+          {{ 'mdi:check' if n > 0 and f == n else '' }}
+        badge_color: green
+        tap_action:
+          action: navigate
+          navigation_path: /db891f0a_recetteur
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg, rgba(255, 193, 7, 0.22), rgba(255, 112, 67, 0.08));
+            }
+      - type: custom:mushroom-template-card
+        entity: sensor.recetteur_menu_soir
+        layout: vertical
+        fill_container: true
+        primary: Ce soir
+        multiline_secondary: true
+        secondary: >-
+          {% set r = state_attr('sensor.recetteur_menu_soir', 'recettes') or [] %}
+          {% if r %}{{ states('sensor.recetteur_menu_soir') }} — {{ r | map(attribute='duree_minutes') | max }} min · {{ r[0].personnes }} pers.
+          {% else %}Rien de prévu{% endif %}
+        icon: >-
+          {% set t = (state_attr('sensor.recetteur_menu_soir', 'titres') or [''])[0] | lower %}
+          {% set m = {
+          'soupe': 'mdi:pot-steam', 'velouté': 'mdi:pot-steam', 'potage': 'mdi:pot-steam',
+          'salade': 'mdi:leaf', 'tartare': 'mdi:leaf',
+          'pizza': 'mdi:pizza',
+          'burger': 'mdi:hamburger',
+          'poulet': 'mdi:food-drumstick', 'dinde': 'mdi:food-drumstick',
+          'bœuf': 'mdi:food-steak', 'boeuf': 'mdi:food-steak', 'steak': 'mdi:food-steak', 'porc': 'mdi:food-steak', 'chili': 'mdi:food-steak',
+          'saumon': 'mdi:fish', 'poisson': 'mdi:fish', 'cabillaud': 'mdi:fish', 'thon': 'mdi:fish', 'crevette': 'mdi:fish',
+          'omelette': 'mdi:egg-fried', 'quiche': 'mdi:egg-fried',
+          'tarte': 'mdi:cake-variant', 'gâteau': 'mdi:cake-variant', 'crumble': 'mdi:cake-variant', 'brownie': 'mdi:cake-variant', 'crêpe': 'mdi:cake-variant',
+          'frites': 'mdi:french-fries', 'gratin': 'mdi:french-fries',
+          'pâtes': 'mdi:pasta', 'spaghetti': 'mdi:pasta', 'tagliatelle': 'mdi:pasta', 'lasagne': 'mdi:pasta', 'gnocchi': 'mdi:pasta',
+          'risotto': 'mdi:rice', 'curry': 'mdi:rice', 'riz': 'mdi:rice'
+          } %}
+          {% set ns = namespace(i='mdi:silverware-fork-knife', f=false) %}
+          {% if (state_attr('sensor.recetteur_menu_soir', 'nombre') | int(0)) == 0 %}{% set ns.i = 'mdi:food-off-outline' %}
+          {% else %}{% for k, v in m.items() %}{% if not ns.f and k in t %}{% set ns.i = v %}{% set ns.f = true %}{% endif %}{% endfor %}{% endif %}
+          {{ ns.i }}
+        icon_color: >-
+          {% set n = state_attr('sensor.recetteur_menu_soir', 'nombre') | int(0) %}
+          {% set f = (state_attr('sensor.recetteur_menu_soir', 'recettes') or []) | selectattr('fait') | list | length %}
+          {{ 'disabled' if n == 0 else 'green' if f == n else 'indigo' }}
+        badge_icon: >-
+          {% set n = state_attr('sensor.recetteur_menu_soir', 'nombre') | int(0) %}
+          {% set f = (state_attr('sensor.recetteur_menu_soir', 'recettes') or []) | selectattr('fait') | list | length %}
+          {{ 'mdi:check' if n > 0 and f == n else '' }}
+        badge_color: green
+        tap_action:
+          action: navigate
+          navigation_path: /db891f0a_recetteur
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg, rgba(63, 81, 181, 0.24), rgba(156, 39, 176, 0.10));
+            }

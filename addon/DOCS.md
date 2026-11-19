@@ -223,6 +223,8 @@ pour les pages « recette » et « cuisiner ». Si le lien ouvre l'app sur l'acc
 « Au menu aujourd'hui » avec un bouton « Cuisiner » ; si le lien ne s'ouvre pas du tout, renseignez `ha_lien_base` avec l'adresse que vous voyez
 dans la barre d'adresse en ouvrant l'app depuis le menu latéral (sa partie chemin, ex. `/db891f0a_recetteur`).
 
+**Carte Mushroom** (HACS : Mushroom, et facultativement card-mod pour le fond dégradé) : `examples/carte-mushroom.yaml` dans le dépôt. Deux tuiles « Ce midi » / « Ce soir » en grille, avec une icône qui suit le plat (soupe, pâtes, poulet, poisson, dessert…), une couleur selon l'état (prévu, tout cuisiné, rien) et un badge ✓. Un tap ouvre l'app. Les modèles ont été vérifiés avec le moteur de modèles de Home Assistant.
+
 Dans une automatisation, `{{ states('sensor.recetteur_menu_soir') }}` donne le plat du soir, et `nombre > 0` permet de ne rien annoncer les jours sans repas.
 Les photos ne sont pas exposées : elles restent derrière l'ingress de Home Assistant.
 
