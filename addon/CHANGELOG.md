@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1
+
+- Correctif : les liens des capteurs ne s'ouvraient pas. Home Assistant enregistre le panneau d'une app à l'adresse `/<identifiant de l'app>`
+  (et non `/hassio/ingress/<identifiant>`) : les liens deviennent `/<identifiant>#/recette/<id>`. Option `ha_lien_base` inchangée.
+
 ## 0.7.0
 
 - Capteurs du menu du jour : **liens vers la recette** (`lien`), le **mode pas à pas** réglé sur le bon nombre de personnes (`lien_cuisine`) et l'app

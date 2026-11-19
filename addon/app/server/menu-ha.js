@@ -15,7 +15,7 @@ const META = {
 const MAX_STATE = 255; // limite de Home Assistant pour l'état d'une entité
 
 /**
- * Liens vers l'app dans Home Assistant. `base` : chemin de l'app (« /hassio/ingress/<slug> », ou la valeur de l'option
+ * Liens vers l'app dans Home Assistant. `base` : chemin du panneau de l'app (« /<slug> » : Home Assistant enregistre le panneau de chaque app sous son identifiant, voir components/hassio/addon_panel.py ; ou la valeur de l'option
  * `ha_lien_base`). L'ingress ne transmet pas de chemin : la page voulue est dans le fragment (#/…), que l'app lit dans l'adresse
  * de la page parente (voir public/js/deeplink.js). Sans `base`, aucun lien n'est publié.
  */
@@ -78,12 +78,12 @@ export function createMenuPublisher({ ha, menu, recettes, log, enabled, linkBase
   let ticker = null;
   let chain = Promise.resolve();
 
-  // Chemin de l'app dans Home Assistant : option `ha_lien_base`, sinon « /hassio/ingress/<slug> » d'après le Supervisor (mémorisé).
+  // Chemin de l'app dans Home Assistant : option `ha_lien_base`, sinon « /<slug> » d'après le Supervisor (mémorisé).
   let base = linkBase || null;
   async function resolveBase() {
     if (base) return base;
     try {
-      base = `/hassio/ingress/${await ha.selfSlug()}`;
+      base = `/${await ha.selfSlug()}`;
     } catch (e) {
       if (!slugFailed) log.info(`Capteurs du menu : liens vers l'app non publiés (${e.message}). Renseignez l'option « ha_lien_base » pour les activer.`);
       slugFailed = true;

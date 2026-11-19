@@ -1,5 +1,5 @@
 // Lien profond depuis Home Assistant. L'ingress n'accepte pas de chemin : une carte du tableau de bord pointe vers
-// « /hassio/ingress/<app>#/recette/<id> ». Le fragment reste dans l'adresse de la page PARENTE (l'interface de Home Assistant), que
+// « /<identifiant de l'app>#/recette/<id> ». Le fragment reste dans l'adresse de la page PARENTE (l'interface de Home Assistant), que
 // l'app, chargée dans un iframe de même origine, peut lire. Seules les pages « recette » et « cuisiner » sont reprises.
 const ALLOWED = /^#\/recette\/[^/?#\s]+(?:\/cuisiner(?:\?[A-Za-z0-9_=&-]*)?)?$/;
 

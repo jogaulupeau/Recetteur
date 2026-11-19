@@ -162,12 +162,12 @@ test('liens : fiche recette et mode pas à pas, construits d\'après l\'identifi
     assert.equal(t.infoCalls.length, 1);
     assert.equal(t.infoCalls[0].auth, 'Bearer tok');
     const soir = states(t.calls)['sensor.recetteur_menu_soir'];
-    assert.equal(soir.attributes.lien_app, '/hassio/ingress/db891f0a_recetteur');
+    assert.equal(soir.attributes.lien_app, '/db891f0a_recetteur');
     const r = soir.attributes.recettes[0];
-    assert.equal(r.lien, `/hassio/ingress/db891f0a_recetteur#/recette/${t.ids[0]}`);
-    assert.equal(r.lien_cuisine, `/hassio/ingress/db891f0a_recetteur#/recette/${t.ids[0]}/cuisiner?p=3&repas=${m.id}`);
+    assert.equal(r.lien, `/db891f0a_recetteur#/recette/${t.ids[0]}`);
+    assert.equal(r.lien_cuisine, `/db891f0a_recetteur#/recette/${t.ids[0]}/cuisiner?p=3&repas=${m.id}`);
     // le capteur du midi (vide) porte quand même le lien de l'app
-    assert.equal(states(t.calls)['sensor.recetteur_menu_midi'].attributes.lien_app, '/hassio/ingress/db891f0a_recetteur');
+    assert.equal(states(t.calls)['sensor.recetteur_menu_midi'].attributes.lien_app, '/db891f0a_recetteur');
   } finally { t.done(); }
 });
 
@@ -199,6 +199,6 @@ test('liens : option ha_lien_base prioritaire ; sans identifiant ni option, pas 
 test('liens : identifiants de recette échappés', () => {
   const menu = { data: { repas: [{ id: 1, date: DAY, slot: 'soir', recipeId: 'a b/c', servings: 4, position: 0 }] } };
   const recettes = { data: { recettes: { 'a b/c': { recette: { titre: 'X' } } } } };
-  const r = snapshot({ menu, recettes, date: DAY, linkBase: '/hassio/ingress/x' }).soir.attributes.recettes[0];
-  assert.equal(r.lien, '/hassio/ingress/x#/recette/a%20b%2Fc');
+  const r = snapshot({ menu, recettes, date: DAY, linkBase: '/x' }).soir.attributes.recettes[0];
+  assert.equal(r.lien, '/x#/recette/a%20b%2Fc');
 });
