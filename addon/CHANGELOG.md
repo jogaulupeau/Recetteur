@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- Capteurs du menu du jour : **liens vers la recette** (`lien`), le **mode pas à pas** réglé sur le bon nombre de personnes (`lien_cuisine`) et l'app
+  (`lien_app`). L'app reprend la page demandée dans le fragment de l'adresse parente (Home Assistant), car l'ingress ne transmet pas de chemin.
+  Option `ha_lien_base` si l'adresse de l'app dans Home Assistant diffère de `/hassio/ingress/<identifiant>`.
+
 ## 0.6.0
 
 - **Menu du jour dans Home Assistant** : deux capteurs, `sensor.recetteur_menu_midi` et `sensor.recetteur_menu_soir` (le jour en cours seulement :

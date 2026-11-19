@@ -85,12 +85,13 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     alerte_voix: String(options.alerte_voix ?? '').trim(),
     alerte_son: String(options.alerte_son ?? '').trim(),
     ha_publier_menu: options.ha_publier_menu !== false, // par défaut : les capteurs du menu du jour sont publiés
+    ha_lien_base: /^(\/[^\s?#]*|https?:\/\/[^\s?#]+)$/.test(String(options.ha_lien_base ?? '').trim()) ? String(options.ha_lien_base).trim() : '',
   };
   const ha = createHa({ token: supervisorToken, base: haBase, fetch: doFetch, cfg });
   const timers = createTimers({ store: etat, titreRecette: (id) => recettes.data.recettes[id]?.recette.titre, ha, log });
   timers.restore();
   // Capteurs « menu du midi / du soir » : inertes hors Home Assistant ou si l'option est désactivée, et tant que `start()` n'est pas appelé.
-  const sensors = createMenuPublisher({ ha, menu, recettes, log, enabled: !!supervisorToken && cfg.ha_publier_menu });
+  const sensors = createMenuPublisher({ ha, menu, recettes, log, enabled: !!supervisorToken && cfg.ha_publier_menu, linkBase: cfg.ha_lien_base });
   menu.onChange(sensors.schedule);
   recettes.onChange(sensors.schedule);
 

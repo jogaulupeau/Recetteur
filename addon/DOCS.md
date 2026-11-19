@@ -29,6 +29,7 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 | `alerte_voix` | Entité de synthèse vocale (`tts.home_assistant_cloud`, `tts.piper`…) : le lecteur annonce « Minuteur terminé : cuisson des pâtes ». |
 | `alerte_son` | À la place de la voix : un son à jouer (`media-source://media_source/local/ding.mp3` ou une URL). Si `alerte_voix` est aussi renseignée, la voix est prioritaire. |
 | `ha_publier_menu` | Activée par défaut : publie le menu **du jour** dans deux capteurs Home Assistant, `sensor.recetteur_menu_midi` et `sensor.recetteur_menu_soir` (voir « Le menu du jour dans un tableau de bord »). |
+| `ha_lien_base` | Facultatif : chemin de l'app dans Home Assistant utilisé pour les liens des capteurs. Par défaut `/hassio/ingress/<identifiant de l'app>`, demandé au Supervisor. À renseigner (ex. `/db891f0a_recetteur`) seulement si les liens ne s'ouvrent pas. |
 | `mcp_token` | Active le **serveur MCP** (voir ci-dessous) : jeton d'accès de 24 caractères minimum. Vide = MCP désactivé. |
 | `mcp_lecture_seule` | Avec le MCP : n'expose que les outils de lecture (rien ne peut être créé, modifié ni supprimé). |
 | `ingress_only` | Activée par défaut : l'app n'accepte que les connexions venant de l'ingress de Home Assistant (adresse 172.30.32.2), jamais d'un autre add-on ni du réseau. Si l'interface ne s'ouvre plus après une mise à jour de Home Assistant, décochez-la. |
@@ -180,7 +181,7 @@ L'app publie dans Home Assistant deux capteurs, uniquement pour le **jour en cou
 
 | Capteur | État | Attributs |
 | --- | --- | --- |
-| `sensor.recetteur_menu_midi` | les plats du midi, séparés par « + », ou « Rien de prévu » | `date`, `nombre`, `titres` (liste), `recettes` (liste de `id`, `titre`, `personnes`, `duree_minutes`, `fait`) |
+| `sensor.recetteur_menu_midi` | les plats du midi, séparés par « + », ou « Rien de prévu » | `date`, `nombre`, `titres` (liste), `lien_app`, `recettes` (liste de `id`, `titre`, `personnes`, `duree_minutes`, `fait`, `lien`, `lien_cuisine`) |
 | `sensor.recetteur_menu_soir` | idem, pour le soir | idem |
 
 Ils sont mis à jour dès que le menu ou une recette change, à minuit, et au moins toutes les 10 minutes. Ce dernier point compte : ces
@@ -199,7 +200,7 @@ content: |
   **Soir** : {{ states('sensor.recetteur_menu_soir') }}
 ```
 
-Avec la durée et le nombre de personnes :
+Avec la durée, le nombre de personnes et **un lien vers chaque recette** :
 
 ```yaml
 type: markdown
@@ -208,12 +209,19 @@ content: |
   {% for repas, nom in [('midi', 'Midi'), ('soir', 'Soir')] %}
   **{{ nom }}**
   {% for r in state_attr('sensor.recetteur_menu_' ~ repas, 'recettes') or [] %}
-  - {{ r.titre }} — {{ r.duree_minutes }} min, {{ r.personnes }} pers.{{ ' ✓' if r.fait }}
+  - [{{ r.titre }}]({{ r.lien }}) — {{ r.duree_minutes }} min, {{ r.personnes }} pers. · [Cuisiner]({{ r.lien_cuisine }}){{ ' ✓' if r.fait }}
   {% else %}
   - Rien de prévu
   {% endfor %}
   {% endfor %}
 ```
+
+`lien` ouvre la fiche de la recette, `lien_cuisine` le mode pas à pas déjà réglé sur le bon nombre de personnes (et relié au repas : « Terminer »
+le coche au menu). `lien_app` ouvre simplement l'app. Comment ça marche : l'ingress de Home Assistant ne transmet pas de chemin, donc le lien
+est de la forme `/hassio/ingress/<app>#/recette/<id>` et l'app lit le fragment dans l'adresse de la page parente (Home Assistant), uniquement
+pour les pages « recette » et « cuisiner ». Si le lien ouvre l'app sur l'accueil au lieu de la recette, l'accueil affiche de toute façon
+« Au menu aujourd'hui » avec un bouton « Cuisiner » ; si le lien ne s'ouvre pas du tout, renseignez `ha_lien_base` avec l'adresse que vous voyez
+dans la barre d'adresse en ouvrant l'app depuis le menu latéral (sa partie chemin, ex. `/db891f0a_recetteur`).
 
 Dans une automatisation, `{{ states('sensor.recetteur_menu_soir') }}` donne le plat du soir, et `nombre > 0` permet de ne rien annoncer les jours sans repas.
 Les photos ne sont pas exposées : elles restent derrière l'ingress de Home Assistant.

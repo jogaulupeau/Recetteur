@@ -1,5 +1,5 @@
 name: Recetteur
-version: "0.6.0"
+version: "0.7.0"
 slug: recetteur
 description: >-
   Vos recettes, le menu de la semaine, la liste de courses et la recette pas à
@@ -43,6 +43,7 @@ options:
   alerte_voix: ""
   alerte_son: ""
   ha_publier_menu: true
+  ha_lien_base: ""
   ingress_only: true
   mcp_token: ""
   mcp_lecture_seule: false
@@ -57,6 +58,8 @@ schema:
   alerte_son: str
   # Publie le menu du jour dans deux capteurs Home Assistant (midi et soir), pour une carte de tableau de bord.
   ha_publier_menu: bool
+  # Facultatif : chemin de l'app dans Home Assistant pour les liens des capteurs (par défaut /hassio/ingress/<identifiant de l'app>).
+  ha_lien_base: str?
   # Refuse toute connexion qui ne vient pas de l'ingress du Supervisor (recommandation de Home Assistant).
   ingress_only: bool
   # Jeton d'accès du serveur MCP (24 caractères minimum, ex. « openssl rand -hex 24 »). Vide = MCP désactivé.

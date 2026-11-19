@@ -37,6 +37,17 @@ export function createHa({ token, base, fetch: doFetch, cfg }) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
   }
 
+  /** Identifiant (slug) de cette app, d'après le Supervisor : sert à construire les liens ouvrant l'app dans Home Assistant. */
+  async function selfSlug() {
+    if (!token) throw new HaError('Disponible uniquement lorsque l’app tourne dans Home Assistant.', 501);
+    const root = base.replace(/\/core\/api\/?$/, '');
+    const res = await doFetch(`${root}/addons/self/info`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const slug = (await res.json())?.data?.slug;
+    if (typeof slug !== 'string' || !/^[a-z0-9_]{1,80}$/i.test(slug)) throw new Error('identifiant de l’app introuvable');
+    return slug;
+  }
+
   /** « voix » (annonce parlée via une entité TTS), « son » (fichier audio), ou null si rien n'est configuré. */
   const alertMode = () => {
     if (!token || !cfg.alerte_media_player) return null;
@@ -69,5 +80,5 @@ export function createHa({ token, base, fetch: doFetch, cfg }) {
     return mode;
   }
 
-  return { available: !!token, call, setState, alertMode, announce };
+  return { available: !!token, call, setState, selfSlug, alertMode, announce };
 }

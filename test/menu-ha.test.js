@@ -10,10 +10,15 @@ import { exemples } from './helpers.js';
 const silent = { info() {}, error() {} };
 const DAY = '2026-11-19';
 
-async function boot({ options = {}, token = 'tok', failing = () => false } = {}) {
+async function boot({ options = {}, token = 'tok', failing = () => false, slug = 'db891f0a_recetteur' } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'recetteur-sensors-'));
   const calls = [];
+  const infoCalls = [];
   const fakeFetch = async (url, init) => {
+    if (url.endsWith('/addons/self/info')) { // identité de l'app, demandée au Supervisor pour construire les liens
+      infoCalls.push({ url, auth: init.headers.Authorization });
+      return slug ? { ok: true, status: 200, json: async () => ({ result: 'ok', data: { slug } }) } : { ok: false, status: 403 };
+    }
     calls.push({ url, method: init.method, auth: init.headers.Authorization, body: JSON.parse(init.body) });
     return { ok: !failing(), status: failing() ? 503 : 200 };
   };
@@ -21,7 +26,7 @@ async function boot({ options = {}, token = 'tok', failing = () => false } = {})
   const post = async (url, body) => app.dispatch('POST', url, body);
   await post('/api/import', exemples);
   const ids = Object.keys(app.stores.recettes.data.recettes);
-  return { app, calls, ids, post, dir, done: () => fs.rmSync(dir, { recursive: true, force: true }) };
+  return { app, calls, infoCalls, ids, post, dir, done: () => fs.rmSync(dir, { recursive: true, force: true }) };
 }
 const states = (calls) => Object.fromEntries(calls.filter((c) => c.url.includes('/states/')).map((c) => [c.url.split('/states/')[1], c.body]));
 
@@ -145,4 +150,55 @@ test('capteurs : un échec de Home Assistant est journalisé une fois, puis l\'a
   down = false;
   assert.equal(await p.publish(), true);
   assert.ok(logs.info.some((m) => /de nouveau/.test(m)));
+});
+
+test('liens : fiche recette et mode pas à pas, construits d\'après l\'identifiant de l\'app donné par le Supervisor', async () => {
+  const t = await boot();
+  try {
+    const m = (await t.post('/api/menu', { date: DAY, slot: 'soir', recipeId: t.ids[0], servings: 3 })).body;
+    t.calls.length = 0;
+    await t.app.sensors.publish(DAY);
+    await t.app.sensors.publish(DAY); // l'identifiant est mémorisé : une seule demande au Supervisor
+    assert.equal(t.infoCalls.length, 1);
+    assert.equal(t.infoCalls[0].auth, 'Bearer tok');
+    const soir = states(t.calls)['sensor.recetteur_menu_soir'];
+    assert.equal(soir.attributes.lien_app, '/hassio/ingress/db891f0a_recetteur');
+    const r = soir.attributes.recettes[0];
+    assert.equal(r.lien, `/hassio/ingress/db891f0a_recetteur#/recette/${t.ids[0]}`);
+    assert.equal(r.lien_cuisine, `/hassio/ingress/db891f0a_recetteur#/recette/${t.ids[0]}/cuisiner?p=3&repas=${m.id}`);
+    // le capteur du midi (vide) porte quand même le lien de l'app
+    assert.equal(states(t.calls)['sensor.recetteur_menu_midi'].attributes.lien_app, '/hassio/ingress/db891f0a_recetteur');
+  } finally { t.done(); }
+});
+
+test('liens : option ha_lien_base prioritaire ; sans identifiant ni option, pas de lien mais les capteurs fonctionnent', async () => {
+  let t = await boot({ options: { ha_lien_base: '/db891f0a_recetteur/' } });
+  try {
+    await t.post('/api/menu', { date: DAY, slot: 'soir', recipeId: t.ids[0], servings: 4 });
+    t.calls.length = 0;
+    await t.app.sensors.publish(DAY);
+    assert.equal(t.infoCalls.length, 0); // pas besoin du Supervisor
+    assert.equal(states(t.calls)['sensor.recetteur_menu_soir'].attributes.recettes[0].lien, `/db891f0a_recetteur#/recette/${t.ids[0]}`);
+  } finally { t.done(); }
+
+  t = await boot({ slug: null });
+  try {
+    await t.post('/api/menu', { date: DAY, slot: 'soir', recipeId: t.ids[0], servings: 4 });
+    t.calls.length = 0;
+    assert.equal(await t.app.sensors.publish(DAY), true);
+    const soir = states(t.calls)['sensor.recetteur_menu_soir'];
+    assert.ok(soir.state.length > 0);
+    assert.ok(!('lien_app' in soir.attributes) && !('lien' in soir.attributes.recettes[0]));
+  } finally { t.done(); }
+
+  // une valeur douteuse (ni chemin ni http(s)) est ignorée plutôt que publiée
+  t = await boot({ options: { ha_lien_base: 'javascript:alert(1)' } });
+  try { assert.equal(t.app.config.ha_lien_base, ''); } finally { t.done(); }
+});
+
+test('liens : identifiants de recette échappés', () => {
+  const menu = { data: { repas: [{ id: 1, date: DAY, slot: 'soir', recipeId: 'a b/c', servings: 4, position: 0 }] } };
+  const recettes = { data: { recettes: { 'a b/c': { recette: { titre: 'X' } } } } };
+  const r = snapshot({ menu, recettes, date: DAY, linkBase: '/hassio/ingress/x' }).soir.attributes.recettes[0];
+  assert.equal(r.lien, '/hassio/ingress/x#/recette/a%20b%2Fc');
 });

@@ -1,6 +1,7 @@
 import { h, clear, icon, toast, fill } from './dom.js';
 import { init } from './state.js';
 import { initTimers } from './timers.js';
+import { adoptParentHash } from './deeplink.js';
 
 import * as home from './views/home.js';
 import * as recipes from './views/recipes.js';
@@ -87,7 +88,7 @@ window.addEventListener('hashchange', render);
     return;
   }
   initTimers();
-  render();
+  if (!adoptParentHash()) render(); // si une page est reprise de Home Assistant, le changement de fragment déclenche déjà render()
 })();
 
 window.addEventListener('unhandledrejection', (e) => toast(e.reason?.message || 'Une erreur est survenue.', { type: 'error' }));

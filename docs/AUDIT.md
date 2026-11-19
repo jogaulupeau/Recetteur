@@ -59,6 +59,8 @@ ne s'applique qu'aux écrans de connexion, pas aux webhooks : les `401` du serve
 
 **Capteurs du menu du jour** (0.6.0) : l'app écrit deux entités par `POST /states/<entité>` avec le jeton du Supervisor, sans nouveau privilège (`homeassistant_api` était déjà demandé). Les noms d'entités sont fixes (aucune valeur fournie par un utilisateur ne sert à les construire), le contenu est un simple texte de titres de recettes ; un échec de Home Assistant est journalisé une seule fois et n'affecte pas l'app.
 
+**Liens des capteurs** (0.7.0) : l'app, dans l'iframe de l'ingress (même origine que Home Assistant), lit `window.parent.location.hash`. Seuls les fragments `#/recette/<id>` et `#/recette/<id>/cuisiner?p=…&repas=…` (caractères `A-Za-z0-9_=&-`, 300 max) sont repris, et uniquement quand l'app s'ouvre sur l'accueil ; ils ne font que choisir une page de l'app. Une page parente d'une autre origine est ignorée sans erreur. L'identifiant de l'app vient de `GET /addons/self/info` (autorisé par le rôle par défaut) ; l'option `ha_lien_base` n'accepte qu'un chemin ou une adresse http(s).
+
 **App « Recetteur MCP »** (`addon-mcp/`) : installe l'intégration sans HACS. Choix de conception : le privilège
 `homeassistant_config` en écriture est le plus sensible de l'ensemble ; il est donc porté par une app séparée d'une centaine de lignes
 (bibliothèque standard), et l'app Recetteur n'a aucun privilège élargi. L'app n'écrit que dans `custom_components/recetteur_mcp/` et

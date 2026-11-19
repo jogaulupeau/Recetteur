@@ -14,8 +14,24 @@ const META = {
 };
 const MAX_STATE = 255; // limite de Home Assistant pour l'état d'une entité
 
+/**
+ * Liens vers l'app dans Home Assistant. `base` : chemin de l'app (« /hassio/ingress/<slug> », ou la valeur de l'option
+ * `ha_lien_base`). L'ingress ne transmet pas de chemin : la page voulue est dans le fragment (#/…), que l'app lit dans l'adresse
+ * de la page parente (voir public/js/deeplink.js). Sans `base`, aucun lien n'est publié.
+ */
+export function links(base) {
+  if (!base) return null;
+  const b = String(base).replace(/\/+$/, '');
+  return {
+    app: b,
+    recette: (id) => `${b}#/recette/${encodeURIComponent(id)}`,
+    cuisine: (id, personnes, repas) => `${b}#/recette/${encodeURIComponent(id)}/cuisiner?p=${Number(personnes) || 4}&repas=${Number(repas) || 0}`,
+  };
+}
+
 /** États et attributs des deux capteurs pour un jour donné (AAAA-MM-JJ). */
-export function snapshot({ menu, recettes, date }) {
+export function snapshot({ menu, recettes, date, linkBase = null }) {
+  const L = links(linkBase);
   const out = {};
   for (const slot of Object.keys(ENTITIES)) {
     const meals = menu.data.repas
@@ -23,7 +39,9 @@ export function snapshot({ menu, recettes, date }) {
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.id - b.id);
     const items = meals.map((m) => {
       const r = Object.hasOwn(recettes.data.recettes, m.recipeId) ? recettes.data.recettes[m.recipeId].recette : null;
-      return { id: m.recipeId, titre: r?.titre ?? 'Recette supprimée', personnes: m.servings, duree_minutes: r ? totalTime(r) : 0, fait: !!m.fait };
+      const item = { id: m.recipeId, titre: r?.titre ?? 'Recette supprimée', personnes: m.servings, duree_minutes: r ? totalTime(r) : 0, fait: !!m.fait };
+      if (L && r) { item.lien = L.recette(m.recipeId); item.lien_cuisine = L.cuisine(m.recipeId, m.servings, m.id); }
+      return item;
     });
     let state = items.length ? items.map((i) => i.titre).join(' + ') : EMPTY;
     if (state.length > MAX_STATE) state = `${state.slice(0, MAX_STATE - 1)}…`;
@@ -38,6 +56,7 @@ export function snapshot({ menu, recettes, date }) {
         nombre: items.length,
         titres: items.map((i) => i.titre),
         recettes: items,
+        ...(L ? { lien_app: L.app } : {}),
       },
     };
   }
@@ -50,7 +69,7 @@ export function snapshot({ menu, recettes, date }) {
  * @param {boolean} o.enabled  faux hors Home Assistant ou si l'option est désactivée : tout est inerte
  * @param {number} [o.debounceMs]  regroupe les modifications rapprochées (ajouter 7 repas = une seule écriture)
  */
-export function createMenuPublisher({ ha, menu, recettes, log, enabled, debounceMs = 1000, refreshMs = 10 * 60_000, tickMs = 60_000, getToday = today }) {
+export function createMenuPublisher({ ha, menu, recettes, log, enabled, linkBase = '', debounceMs = 1000, refreshMs = 10 * 60_000, tickMs = 60_000, getToday = today }) {
   let started = false;
   let lastDate = null;
   let lastPush = 0;
@@ -59,9 +78,24 @@ export function createMenuPublisher({ ha, menu, recettes, log, enabled, debounce
   let ticker = null;
   let chain = Promise.resolve();
 
+  // Chemin de l'app dans Home Assistant : option `ha_lien_base`, sinon « /hassio/ingress/<slug> » d'après le Supervisor (mémorisé).
+  let base = linkBase || null;
+  async function resolveBase() {
+    if (base) return base;
+    try {
+      base = `/hassio/ingress/${await ha.selfSlug()}`;
+    } catch (e) {
+      if (!slugFailed) log.info(`Capteurs du menu : liens vers l'app non publiés (${e.message}). Renseignez l'option « ha_lien_base » pour les activer.`);
+      slugFailed = true;
+    }
+    return base;
+  }
+  let slugFailed = false;
+
   async function push(date) {
     try {
-      for (const s of Object.values(snapshot({ menu, recettes, date }))) await ha.setState(s.entity, s.state, s.attributes);
+      const b = await resolveBase();
+      for (const s of Object.values(snapshot({ menu, recettes, date, linkBase: b }))) await ha.setState(s.entity, s.state, s.attributes);
       lastDate = date;
       lastPush = Date.now();
       if (failing) log.info('Capteurs du menu : Home Assistant répond de nouveau, capteurs republiés.');
