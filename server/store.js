@@ -17,6 +17,12 @@ export class JsonStore {
     this.pretty = pretty;
     this.bakEveryMs = bakEveryMs;
     this.data = this.#load(defaults);
+    this.listeners = [];
+  }
+
+  /** `fn()` est appelée après chaque enregistrement réussi (une erreur du récepteur ne bloque jamais l'écriture). */
+  onChange(fn) {
+    this.listeners.push(fn);
   }
 
   #load(defaults) {
@@ -44,6 +50,9 @@ export class JsonStore {
       if (this.bakEveryMs <= 0 || age >= this.bakEveryMs) fs.copyFileSync(this.file, bak);
     }
     fs.renameSync(tmp, this.file);
+    for (const fn of this.listeners) {
+      try { fn(); } catch (e) { this.log.error(`${path.basename(this.file)} : récepteur de modifications en erreur (${e.message})`); }
+    }
   }
 
   /** Applique `fn` aux données puis enregistre. */

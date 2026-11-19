@@ -57,6 +57,8 @@ liste blanche d'en-têtes dans les deux sens (ni cookies, ni `X-Forwarded-For`, 
 4 Mo ; pas de redirection suivie ; erreurs réseau sans adresse interne. Le décompte d'échecs d'authentification de Home Assistant (IP ban)
 ne s'applique qu'aux écrans de connexion, pas aux webhooks : les `401` du serveur MCP peuvent traverser sans risque de bannissement.
 
+**Capteurs du menu du jour** (0.6.0) : l'app écrit deux entités par `POST /states/<entité>` avec le jeton du Supervisor, sans nouveau privilège (`homeassistant_api` était déjà demandé). Les noms d'entités sont fixes (aucune valeur fournie par un utilisateur ne sert à les construire), le contenu est un simple texte de titres de recettes ; un échec de Home Assistant est journalisé une seule fois et n'affecte pas l'app.
+
 **App « Recetteur MCP »** (`addon-mcp/`) : installe l'intégration sans HACS. Choix de conception : le privilège
 `homeassistant_config` en écriture est le plus sensible de l'ensemble ; il est donc porté par une app séparée d'une centaine de lignes
 (bibliothèque standard), et l'app Recetteur n'a aucun privilège élargi. L'app n'écrit que dans `custom_components/recetteur_mcp/` et

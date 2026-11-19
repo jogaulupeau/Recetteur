@@ -1,5 +1,5 @@
 name: Recetteur
-version: "0.5.0"
+version: "0.6.0"
 slug: recetteur
 description: >-
   Vos recettes, le menu de la semaine, la liste de courses et la recette pas à
@@ -23,7 +23,8 @@ panel_title: Recettes
 panel_admin: false
 
 # Autorise l'app à appeler des services Home Assistant, via le jeton du Supervisor :
-# todo.add_item (courses) et tts.speak / media_player.play_media (alerte des minuteurs).
+# todo.add_item (courses), tts.speak / media_player.play_media (alerte des minuteurs) et l'écriture des deux capteurs du menu du jour
+# (sensor.recetteur_menu_midi et sensor.recetteur_menu_soir).
 homeassistant_api: true
 
 # Serveur MCP (Claude) : port dédié, fermé tant que « mcp_token » est vide. Il n'est pas publié par défaut : pour l'ouvrir au
@@ -41,6 +42,7 @@ options:
   alerte_media_player: ""
   alerte_voix: ""
   alerte_son: ""
+  ha_publier_menu: true
   ingress_only: true
   mcp_token: ""
   mcp_lecture_seule: false
@@ -53,6 +55,8 @@ schema:
   alerte_media_player: str
   alerte_voix: str
   alerte_son: str
+  # Publie le menu du jour dans deux capteurs Home Assistant (midi et soir), pour une carte de tableau de bord.
+  ha_publier_menu: bool
   # Refuse toute connexion qui ne vient pas de l'ingress du Supervisor (recommandation de Home Assistant).
   ingress_only: bool
   # Jeton d'accès du serveur MCP (24 caractères minimum, ex. « openssl rand -hex 24 »). Vide = MCP désactivé.

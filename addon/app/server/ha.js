@@ -26,6 +26,17 @@ export function createHa({ token, base, fetch: doFetch, cfg }) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
   }
 
+  /** Écrit l'état d'une entité (capteur sans identifiant unique : voir menu-ha.js). */
+  async function setState(entityId, state, attributes = {}) {
+    if (!token) throw new HaError('Disponible uniquement lorsque l’app tourne dans Home Assistant.', 501);
+    const res = await doFetch(`${base}/states/${entityId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state, attributes }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  }
+
   /** « voix » (annonce parlée via une entité TTS), « son » (fichier audio), ou null si rien n'est configuré. */
   const alertMode = () => {
     if (!token || !cfg.alerte_media_player) return null;
@@ -58,5 +69,5 @@ export function createHa({ token, base, fetch: doFetch, cfg }) {
     return mode;
   }
 
-  return { available: !!token, call, alertMode, announce };
+  return { available: !!token, call, setState, alertMode, announce };
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- **Menu du jour dans Home Assistant** : deux capteurs, `sensor.recetteur_menu_midi` et `sensor.recetteur_menu_soir` (le jour en cours seulement :
+  plats, nombre, durée, personnes, « fait »), pour une carte de tableau de bord ou une automatisation. Mis à jour à chaque modification, à
+  minuit et toutes les 10 minutes ; option `ha_publier_menu` (activée par défaut). Exemples de cartes dans DOCS.md.
+
 ## 0.5.0
 
 - **Import de recettes par liens (Jow, blogs…) via Claude** : donnez à Claude les liens des recettes de la semaine ; il lit les pages,

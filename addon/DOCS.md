@@ -28,6 +28,7 @@ Samba `\\homeassistant\addons\` ou « Advanced SSH & Web Terminal »), puis
 | `alerte_media_player` | Lecteur multimédia qui sonne à la fin d'un minuteur (`media_player.cuisine`, une enceinte Sonos, Google Nest…). Vide = pas d'alerte sur enceinte. |
 | `alerte_voix` | Entité de synthèse vocale (`tts.home_assistant_cloud`, `tts.piper`…) : le lecteur annonce « Minuteur terminé : cuisson des pâtes ». |
 | `alerte_son` | À la place de la voix : un son à jouer (`media-source://media_source/local/ding.mp3` ou une URL). Si `alerte_voix` est aussi renseignée, la voix est prioritaire. |
+| `ha_publier_menu` | Activée par défaut : publie le menu **du jour** dans deux capteurs Home Assistant, `sensor.recetteur_menu_midi` et `sensor.recetteur_menu_soir` (voir « Le menu du jour dans un tableau de bord »). |
 | `mcp_token` | Active le **serveur MCP** (voir ci-dessous) : jeton d'accès de 24 caractères minimum. Vide = MCP désactivé. |
 | `mcp_lecture_seule` | Avec le MCP : n'expose que les outils de lecture (rien ne peut être créé, modifié ni supprimé). |
 | `ingress_only` | Activée par défaut : l'app n'accepte que les connexions venant de l'ingress de Home Assistant (adresse 172.30.32.2), jamais d'un autre add-on ni du réseau. Si l'interface ne s'ouvre plus après une mise à jour de Home Assistant, décochez-la. |
@@ -172,6 +173,50 @@ navigateurs), l'adresse est bloquée une minute après 10 jetons faux, le débit
 ce port. Ne publiez jamais le port sans HTTPS (le jeton circule en clair sinon). En cas de doute, activez `mcp_lecture_seule`, et
 changez le jeton si vous pensez qu'il a fuité (redémarrage de l'app). Le MCP en lecture seule ne permet de rien modifier, mais
 expose bien le contenu de vos recettes, de votre menu et de vos courses.
+
+## Le menu du jour dans un tableau de bord
+
+L'app publie dans Home Assistant deux capteurs, uniquement pour le **jour en cours** :
+
+| Capteur | État | Attributs |
+| --- | --- | --- |
+| `sensor.recetteur_menu_midi` | les plats du midi, séparés par « + », ou « Rien de prévu » | `date`, `nombre`, `titres` (liste), `recettes` (liste de `id`, `titre`, `personnes`, `duree_minutes`, `fait`) |
+| `sensor.recetteur_menu_soir` | idem, pour le soir | idem |
+
+Ils sont mis à jour dès que le menu ou une recette change, à minuit, et au moins toutes les 10 minutes. Ce dernier point compte : ces
+capteurs sont écrits par l'API de Home Assistant, ils n'ont pas d'identifiant unique (pas de réglages dans l'interface) et **disparaissent à
+chaque redémarrage de Home Assistant**, jusqu'à la prochaine publication de l'app (au plus quelques minutes). Si l'app est arrêtée, ils
+ne sont plus mis à jour. Désactivation : option `ha_publier_menu`.
+
+Carte **Markdown** simple (*Modifier le tableau de bord → Ajouter une carte → Markdown*) :
+
+```yaml
+type: markdown
+title: Au menu aujourd'hui
+content: |
+  **Midi** : {{ states('sensor.recetteur_menu_midi') }}
+
+  **Soir** : {{ states('sensor.recetteur_menu_soir') }}
+```
+
+Avec la durée et le nombre de personnes :
+
+```yaml
+type: markdown
+title: Au menu aujourd'hui
+content: |
+  {% for repas, nom in [('midi', 'Midi'), ('soir', 'Soir')] %}
+  **{{ nom }}**
+  {% for r in state_attr('sensor.recetteur_menu_' ~ repas, 'recettes') or [] %}
+  - {{ r.titre }} — {{ r.duree_minutes }} min, {{ r.personnes }} pers.{{ ' ✓' if r.fait }}
+  {% else %}
+  - Rien de prévu
+  {% endfor %}
+  {% endfor %}
+```
+
+Dans une automatisation, `{{ states('sensor.recetteur_menu_soir') }}` donne le plat du soir, et `nombre > 0` permet de ne rien annoncer les jours sans repas.
+Les photos ne sont pas exposées : elles restent derrière l'ingress de Home Assistant.
 
 ## Photos
 

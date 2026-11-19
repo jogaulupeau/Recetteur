@@ -138,6 +138,10 @@ test('config de l’app Home Assistant cohérente', () => {
   assert.match(cfg, /mcp_token: ""/);
   assert.match(cfg, /mcp_token: password/);
   assert.match(cfg, /8100\/tcp: null/);
+  assert.match(cfg, /ha_publier_menu: true/);
+  assert.match(cfg, /ha_publier_menu: bool/);
+  const docs = fs.readFileSync(path.join(ROOT, 'addon', 'DOCS.md'), 'utf8');
+  for (const needle of ['sensor.recetteur_menu_midi', 'sensor.recetteur_menu_soir', 'ha_publier_menu']) assert.ok(docs.includes(needle), `${needle} absent de DOCS.md`);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /RECETTEUR_MCP_PORT=8100/);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /RECETTEUR_ALLOWED_PEERS=172\.30\.32\.2/);
   assert.match(fs.readFileSync(path.join(ROOT, 'addon', 'run.sh'), 'utf8'), /PORT=8099/);

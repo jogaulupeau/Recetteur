@@ -35,10 +35,13 @@ const allowedHosts = loopback || process.env.RECETTEUR_ALLOWED_HOSTS ? new Set([
 const app = createApp({ dataDir, options, log, allowedPeers, allowedHosts, supervisorToken: process.env.SUPERVISOR_TOKEN || null,
   // Pour simuler Home Assistant en développement (par défaut : l'API du Supervisor).
   haBase: process.env.HA_API_BASE || undefined });
-const { server, stores } = app;
+const { server, stores, sensors } = app;
 server.listen(port, host, () => {
   log.info(`Recetteur : http://${host}:${port}/ — ${Object.keys(stores.recettes.data.recettes).length} recette(s), données dans ${dataDir}`);
 });
+
+// Capteurs du menu du jour dans Home Assistant (sans effet hors Home Assistant ou si « ha_publier_menu » est désactivée).
+sensors.start();
 
 // Serveur MCP (Claude) : sur son propre port, uniquement si un jeton est configuré. Il n'est PAS derrière l'ingress de
 // Home Assistant : le jeton est donc la seule barrière (≥ 24 caractères, voir DOCS.md).
@@ -60,6 +63,7 @@ process.on('uncaughtException', (e) => log.error('Exception non gérée :', e?.s
 // Arrêt propre : on referme aussi les connexions « keep-alive », sinon server.close() attend leur expiration.
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {
+    sensors.stop();
     server.close(() => process.exit(0));
     server.closeAllConnections?.();
     mcp?.server.close();

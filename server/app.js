@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { JsonStore } from './store.js';
 import { createHa, HaError } from './ha.js';
 import { createTimers } from './minuteurs.js';
+import { createMenuPublisher } from './menu-ha.js';
 import { validateRecipe, validateBundle } from '../shared/recipe.js';
 import { slugify, sourceKey } from '../shared/text.js';
 import { FORMAT } from '../shared/vocab.js';
@@ -83,10 +84,15 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
     alerte_media_player: String(options.alerte_media_player ?? '').trim(),
     alerte_voix: String(options.alerte_voix ?? '').trim(),
     alerte_son: String(options.alerte_son ?? '').trim(),
+    ha_publier_menu: options.ha_publier_menu !== false, // par défaut : les capteurs du menu du jour sont publiés
   };
   const ha = createHa({ token: supervisorToken, base: haBase, fetch: doFetch, cfg });
   const timers = createTimers({ store: etat, titreRecette: (id) => recettes.data.recettes[id]?.recette.titre, ha, log });
   timers.restore();
+  // Capteurs « menu du midi / du soir » : inertes hors Home Assistant ou si l'option est désactivée, et tant que `start()` n'est pas appelé.
+  const sensors = createMenuPublisher({ ha, menu, recettes, log, enabled: !!supervisorToken && cfg.ha_publier_menu });
+  menu.onChange(sensors.schedule);
+  recettes.onChange(sensors.schedule);
 
   const now = () => new Date().toISOString();
   const entry = (id) => {
@@ -608,5 +614,5 @@ export function createApp({ dataDir, options = {}, log = console, supervisorToke
   server.requestTimeout = 120_000;
 
   server.on('close', () => timers.close());
-  return { server, stores: { recettes, menu, etat }, config: cfg, timers, dispatch };
+  return { server, stores: { recettes, menu, etat }, config: cfg, timers, sensors, dispatch };
 }
